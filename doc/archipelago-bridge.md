@@ -45,7 +45,7 @@ Newline-delimited JSON, one object per line, both directions.
 | `unwatch` | `rule` | Remove a rule. |
 | `clear`   | | Remove all rules. |
 | `trace`   | `kind`, `on` | Stream every event of a kind. Cleared on disconnect. |
-| `do`      | `req`, `op`, `keys`, `args` | Run an engine action (below) at the next safe point. |
+| `do`      | `req`, `op`, `keys`, `args`, `asGame` | Run an engine action (below) at the next safe point. With `asGame: true` the action counts as the player's own (rules can veto what it causes), for test harnesses. |
 | `say`     | `text` | Show an on-screen message. |
 | `ping`    | `req` | Liveness check. |
 
