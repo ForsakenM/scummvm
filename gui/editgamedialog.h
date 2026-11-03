@@ -100,6 +100,7 @@ protected:
 
 	ScrollContainerWidget *_gameContainer;
 	OptionsContainerWidget *_engineOptions;
+	OptionsContainerWidget *_archipelagoOptions; ///< Archipelago bridge settings, or nullptr
 };
 
 } // End of namespace GUI

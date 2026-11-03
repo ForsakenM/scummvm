@@ -2772,7 +2772,7 @@ int ScummEngine::getTalkSpeed() {
 #pragma mark -
 
 Common::Error ScummEngine::go() {
-	if (APBridge::Bridge *bridge = APBridge::Bridge::instance()) {
+	if (APBridge::Bridge *bridge = APBridge::Bridge::startGame()) {
 		_apBridge = new ScummBridgeAdapter(this);
 		bridge->attach(_apBridge, _game.gameid, _game.variant ? _game.variant : "");
 	}

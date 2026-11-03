@@ -41,27 +41,42 @@ static const uint32 kReconnectDelay = 2000;
 static const uint kMaxQueued = 4096;
 
 static Bridge *s_bridge = nullptr;
-static bool s_checked = false;
+
+Common::String Bridge::configuredEndpoint() {
+	// Per-game (or global) settings from the Archipelago options tab
+	if (ConfMan.hasKey("ap_bridge_enabled") && ConfMan.getBool("ap_bridge_enabled")) {
+		Common::String address = ConfMan.hasKey("ap_bridge_address") ? ConfMan.get("ap_bridge_address") : "";
+		address.trim();
+		return address.empty() ? Common::String(kDefaultAddress) : address;
+	}
+	// Older/advanced ways to turn it on: a raw "ap_bridge" key or an environment variable
+	if (ConfMan.hasKey("ap_bridge") && !ConfMan.get("ap_bridge").empty())
+		return ConfMan.get("ap_bridge");
+	const char *env = getenv("SCUMMVM_AP_BRIDGE");
+	return env ? Common::String(env) : Common::String();
+}
 
 Bridge *Bridge::instance() {
-	if (!s_checked) {
-		s_checked = true;
-		Common::String endpoint;
-		if (ConfMan.hasKey("ap_bridge"))
-			endpoint = ConfMan.get("ap_bridge");
-		if (endpoint.empty()) {
-			const char *env = getenv("SCUMMVM_AP_BRIDGE");
-			if (env)
-				endpoint = env;
-		}
-		if (!endpoint.empty()) {
-#ifdef USE_LIBCURL
-			s_bridge = new Bridge(endpoint);
-#else
-			warning("APBridge: requested (%s) but this build has no libcurl networking", endpoint.c_str());
-#endif
-		}
+	return s_bridge;
+}
+
+Bridge *Bridge::startGame() {
+	Common::String endpoint = configuredEndpoint();
+	if (endpoint.empty()) {
+		delete s_bridge;
+		s_bridge = nullptr;
+		return nullptr;
 	}
+#ifdef USE_LIBCURL
+	if (s_bridge && s_bridge->_endpoint != endpoint) {
+		delete s_bridge;
+		s_bridge = nullptr;
+	}
+	if (!s_bridge)
+		s_bridge = new Bridge(endpoint);
+#else
+	warning("APBridge: requested (%s) but this build has no libcurl networking", endpoint.c_str());
+#endif
 	return s_bridge;
 }
 
