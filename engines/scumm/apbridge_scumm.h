@@ -38,7 +38,16 @@ class ScummEngine;
  *   bitvar  keys [index]   args [newValue, oldValue]               (vetoable)
  *   room    keys [room]    args []
  *   script  keys [number]  args []                                 (vetoable)
+ *   getowner keys [object, by, number]  args [owner]               (vetoable)
+ *           a script asked who owns an object (getObjectOwner). "by" names the
+ *           asking script: object (number = object id), global, local, entry
+ *           or exit (number = room). A veto replaces the answer with the
+ *           rule's value; the real owner is unchanged, so the inventory and
+ *           every other script still see the truth.
  *   ctx: room, ego
+ *
+ * A pickup whose ownership change is vetoed also drops the inventory entry
+ * the pickup had already created, so vetoed checks never fill the inventory.
  *
  * Actions (cmd "do"):
  *   getVar [n]   setVar [n, value]   getBit [n]   setBit [n, 0|1]
@@ -48,6 +57,7 @@ class ScummEngine;
  *   take [obj]             removes an object from the inventory
  *   runScript [n, args...]
  *   room
+ *   invSlots              inventory entries in use (SCUMM caps them, 80 in v5)
  */
 class ScummBridgeAdapter : public APBridge::Adapter {
 public:
@@ -62,6 +72,9 @@ public:
 
 	// Hooks; return true to veto.
 	bool onPutOwner(int obj, int owner);
+	bool onGetOwner(int obj, int &owner);
+	void pickupBegin() { _vetoedOwnerObj = 0; }
+	void pickupEnd(int obj, int slot);
 	bool inInventory(int obj) const;
 	bool onWriteVar(unsigned int var, int value);
 	void onRoom(int room);
@@ -69,6 +82,7 @@ public:
 
 private:
 	ScummEngine *_vm;
+	int _vetoedOwnerObj = 0;  ///< last object whose owner change was vetoed
 };
 
 } // End of namespace Scumm

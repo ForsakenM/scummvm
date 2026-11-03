@@ -94,13 +94,34 @@ Events:
 | `bitvar` | `[index]` | `[new, old]` (vetoable) |
 | `room`   | `[room]` | |
 | `script` | `[number]` | (vetoable) |
+| `getowner` | `[object, by, number]` | `[owner]` (vetoable; v5). A script asked who owns an object. `by` is `object` (number = the object whose verb script is running), `global`, `local`, `entry` or `exit` (number = room). |
 
 Context: `room`, `ego`.
 
+A `getowner` veto replaces the answer the script gets with the rule's `value`.
+The real owner does not change, so the inventory, other scripts and other
+rooms still see the truth. This keeps a location checkable after the client
+has already handed over its item: for example, answer `15` (the room) when the
+pile of paper in Monkey Island 2 (object 67) asks whether Guybrush owns the
+paper (object 68), and the pile hands it out again; the pickup is then vetoed
+and reported.
+
+```json
+{"cmd":"watch","rule":10,"kind":"getowner","keys":["68","object","67"],"ctx":{"room":8},"veto":true,"value":15}
+{"cmd":"watch","rule":11,"kind":"owner","keys":["68"],"args":["*","*","1"],"ctx":{"room":8},"veto":true}
+```
+
+A pickup (`pickupObject`) copies the object into the inventory before it sets
+the owner. When the owner change is vetoed, the bridge also removes that new
+inventory entry, so vetoed pickups never duplicate an item or use up
+inventory space (v5 games hold at most 80 entries).
+
 Actions: `getVar`, `setVar`, `getBit`, `setBit`, `getOwner`,
-`setOwner [obj, owner|-1]`, `give [obj, homeRoom]` (copies the object out of
-its home room into the inventory), `take [obj]`, `runScript [n, args...]`,
-`room`. The tick runs at the top of `scummLoop`.
+`setOwner [obj, owner|-1]` (clears the inventory entry first when moving an
+object away from ego), `give [obj, homeRoom]` (copies the object out of its
+home room into the inventory unless it is already there), `take [obj]`,
+`runScript [n, args...]`, `room`, `invSlots` (inventory entries in use).
+The tick runs at the top of `scummLoop`.
 
 ## Example: King's Quest VI
 

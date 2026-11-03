@@ -22,6 +22,8 @@
 #include "scumm/apbridge_scumm.h"
 #include "scumm/scumm.h"
 #include "scumm/object.h"
+#include "scumm/script.h"
+#include "scumm/resource.h"
 
 namespace Scumm {
 
@@ -62,7 +64,65 @@ bool ScummBridgeAdapter::onPutOwner(int obj, int owner) {
 	args.push_back(owner);
 	args.push_back(_vm->_objectOwnerTable[obj]);
 	args.push_back((_vm->VAR_EGO != 0xFF && owner == _vm->VAR(_vm->VAR_EGO)) ? 1 : 0);
-	return b->notify("owner", keys, args).veto;
+	bool veto = b->notify("owner", keys, args).veto;
+	if (veto)
+		_vetoedOwnerObj = obj;
+	return veto;
+}
+
+bool ScummBridgeAdapter::onGetOwner(int obj, int &owner) {
+	APBridge::Bridge *b = bridge();
+	if (!b || !b->wants("getowner"))
+		return false;
+	const char *by = "global";
+	int number = 0;
+	if (_vm->_currentScript != 0xFF) {
+		const ScriptSlot &ss = _vm->vm.slot[_vm->_currentScript];
+		number = ss.number;
+		if (ss.number == kScriptNumENCD) {
+			by = "entry";
+			number = _vm->_currentRoom;
+		} else if (ss.number == kScriptNumEXCD) {
+			by = "exit";
+			number = _vm->_currentRoom;
+		} else if (ss.where == WIO_GLOBAL) {
+			by = "global";
+		} else if (ss.where == WIO_LOCAL) {
+			by = "local";
+		} else {
+			by = "object";
+		}
+	}
+	APBridge::Keys keys;
+	keys.push_back(num(obj));
+	keys.push_back(by);
+	keys.push_back(num(number));
+	APBridge::Args args;
+	args.push_back(owner);
+	APBridge::Verdict v = b->notify("getowner", keys, args);
+	if (v.veto)
+		owner = v.value;
+	return v.veto;
+}
+
+void ScummBridgeAdapter::pickupEnd(int obj, int slot) {
+	if (_vetoedOwnerObj != obj || slot < 0 || slot >= _vm->_numInventory || _vm->_inventory[slot] != obj)
+		return;
+	_vetoedOwnerObj = 0;
+	// Undo the inventory entry the vetoed pickup created, closing the gap the
+	// same way ScummEngine::clearOwnerOf does.
+	_vm->_res->nukeResource(rtInventory, slot);
+	_vm->_inventory[slot] = 0;
+	for (int i = slot; i < _vm->_numInventory - 1; i++) {
+		if (!_vm->_inventory[i] && _vm->_inventory[i + 1]) {
+			_vm->_inventory[i] = _vm->_inventory[i + 1];
+			_vm->_inventory[i + 1] = 0;
+			_vm->_res->_types[rtInventory][i]._address = _vm->_res->_types[rtInventory][i + 1]._address;
+			_vm->_res->_types[rtInventory][i]._size = _vm->_res->_types[rtInventory][i + 1]._size;
+			_vm->_res->_types[rtInventory][i + 1]._address = nullptr;
+			_vm->_res->_types[rtInventory][i + 1]._size = 0;
+		}
+	}
 }
 
 bool ScummBridgeAdapter::onWriteVar(unsigned int var, int value) {
@@ -112,6 +172,14 @@ bool ScummBridgeAdapter::performAction(const Common::String &op, const APBridge:
                                        int32 &result, Common::String &error) {
 	int ego = (_vm->VAR_EGO != 0xFF) ? _vm->VAR(_vm->VAR_EGO) : 0;
 
+	if (op == "invSlots") {
+		// Raw inventory entries in use, whatever their owners (the cap is _numInventory)
+		result = 0;
+		for (int i = 0; i < _vm->_numInventory; i++)
+			if (_vm->_inventory[i])
+				result++;
+		return true;
+	}
 	if (op == "room") {
 		result = _vm->_currentRoom;
 		return true;

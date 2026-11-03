@@ -20,6 +20,7 @@
  */
 
 #include "scumm/actor.h"
+#include "scumm/apbridge_scumm.h"
 #include "scumm/charset.h"
 #include "scumm/object.h"
 #include "scumm/resource.h"
@@ -1427,7 +1428,12 @@ void ScummEngine_v5::o5_getInventoryCount() {
 
 void ScummEngine_v5::o5_getObjectOwner() {
 	getResultPos();
-	setResult(getOwner(getVarOrDirectWord(PARAM_1)));
+	int obj = getVarOrDirectWord(PARAM_1);
+	int owner = getOwner(obj);
+	// Archipelago bridge: the client may change what scripts are told
+	if (_apBridge)
+		_apBridge->onGetOwner(obj, owner);
+	setResult(owner);
 }
 
 void ScummEngine_v5::o5_getObjectState() {
@@ -2024,8 +2030,21 @@ void ScummEngine_v5::o5_pickupObject() {
 	room = getVarOrDirectByte(PARAM_2);
 	if (room == 0)
 		room = _roomResource;
+	// Archipelago bridge: remember the slot this pickup fills, so a vetoed
+	// pickup can give it back
+	int apSlot = -1;
+	if (_apBridge) {
+		for (int i = 0; i < _numInventory; i++)
+			if (!_inventory[i]) {
+				apSlot = i;
+				break;
+			}
+		_apBridge->pickupBegin();
+	}
 	addObjectToInventory(obj, room);
 	putOwner(obj, VAR(VAR_EGO));
+	if (_apBridge)
+		_apBridge->pickupEnd(obj, apSlot);
 	putClass(obj, kObjectClassUntouchable, 1);
 	putState(obj, 1);
 	markObjectRectAsDirty(obj);
