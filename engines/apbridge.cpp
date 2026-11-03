@@ -394,7 +394,11 @@ void Bridge::handleLine(const Common::String &line) {
 				for (uint i = 0; i < o["args"]->asArray().size(); i++)
 					args.push_back(jsonToInt(o["args"]->asArray()[i]));
 			int32 result = 0;
-			_inAction = true;
+			// "asGame": run the action as if the player did it, so rules can veto
+			// what it causes (used by test harnesses); otherwise the client's own
+			// actions are never vetoed.
+			bool asGame = o.contains("asGame") && o["asGame"]->isBool() && o["asGame"]->asBool();
+			_inAction = !asGame;
 			ok = _adapter->performAction(op, keys, args, result, error);
 			_inAction = false;
 			reply["value"] = new Common::JSONValue((long long int)result);
