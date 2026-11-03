@@ -74,11 +74,13 @@ bool apBridgeCall(EngineState *s, uint16 script, uint16 pubfunct, uint16 argc, c
 
 bool apBridgeSend(EngineState *s, reg_t obj, int selector, bool isMethod, uint16 argc, const reg_t *argp, reg_t &acc) {
 	APBridge::Bridge *b = activeBridge();
-	const char *kind = isMethod ? "send" : "setprop";
+	// Property reads made by message ("(obj prop:)") are reported as getprop.
+	// Reads done with the VM's own property opcodes (inside the object's
+	// methods) never come through here, so a getprop override changes what
+	// other scripts see without changing the object's own behaviour.
+	const char *kind = isMethod ? "send" : (argc ? "setprop" : "getprop");
 	if (!b || !b->wants(kind))
 		return false;
-	if (!isMethod && argc == 0)
-		return false; // property reads are not reported
 	APBridge::Keys keys;
 	keys.push_back(objName(s, obj));
 	keys.push_back(g_sci->getKernel()->getSelectorName(selector));
@@ -88,7 +90,7 @@ bool apBridgeSend(EngineState *s, reg_t obj, int selector, bool isMethod, uint16
 	APBridge::Verdict v = b->notify(kind, keys, args);
 	if (v.veto)
 		acc = make_reg(0, (uint16)v.value);
-	return v.veto && isMethod;
+	return v.veto;
 }
 
 void apBridgeKernel(EngineState *s, const char *name, int argc, const reg_t *argv) {
