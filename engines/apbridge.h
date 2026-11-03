@@ -35,9 +35,10 @@
  * engine to perform primitive actions (set a variable, give an item, ...),
  * which each engine implements in its Adapter.
  *
- * Enable it by setting the config key "ap_bridge" (or the environment
- * variable SCUMMVM_AP_BRIDGE) to "host:port". The engine connects out to
- * the client, which listens on that port. Protocol: newline-delimited JSON,
+ * Enable it per game in the Archipelago tab of the game's options
+ * (ap_bridge_enabled / ap_bridge_address), or with the config key "ap_bridge"
+ * or the environment variable SCUMMVM_AP_BRIDGE set to "host:port". The
+ * engine connects out to the client, which listens on that port. Protocol: newline-delimited JSON,
  * see doc/archipelago-bridge.md.
  */
 
@@ -81,8 +82,22 @@ public:
 
 class Bridge {
 public:
-	/** Returns the bridge if enabled in the configuration, else nullptr. */
+	/** Default client address used when only "ap_bridge_enabled" is set. */
+	static constexpr const char *kDefaultAddress = "127.0.0.1:38282";
+
+	/** The active bridge, or nullptr when the running game does not use one. */
 	static Bridge *instance();
+
+	/**
+	 * Called by an engine as its game starts: reads the game's settings
+	 * (ap_bridge_enabled / ap_bridge_address, the legacy ap_bridge key, or the
+	 * SCUMMVM_AP_BRIDGE environment variable) and returns the bridge to attach
+	 * to, or nullptr when the bridge is off for this game.
+	 */
+	static Bridge *startGame();
+
+	/** The client address configured for the active game, or empty when disabled. */
+	static Common::String configuredEndpoint();
 
 	/** Called by an engine once it is running. @p gameId is the detected game id. */
 	void attach(Adapter *adapter, const Common::String &gameId, const Common::String &extra);

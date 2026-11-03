@@ -44,6 +44,8 @@
 #include "gui/widgets/popup.h"
 #include "gui/widgets/scrollcontainer.h"
 
+#include "gui/archipelago-options.h"
+
 #ifdef USE_CLOUD
 #include "backends/cloud/cloudmanager.h"
 #endif
@@ -101,6 +103,7 @@ EditGameDialog::EditGameDialog(const Common::String &domain)
 	EngineMan.upgradeTargetIfNecessary(domain);
 
 	_engineOptions = nullptr;
+	_archipelagoOptions = nullptr;
 
 	// Retrieve the plugin, since we need to access the engine's MetaEngine
 	// implementation.
@@ -372,6 +375,19 @@ EditGameDialog::EditGameDialog(const Common::String &domain)
 	_enableHotspotsCheckbox->setState(hotspotsEnabled);
 
 	//
+	// The Archipelago tab, for engines with an Archipelago bridge adapter
+	//
+	_archipelagoOptions = nullptr;
+	{
+		Common::String engineId = ConfMan.get("engineid", _domain);
+		if (engineId == "sci" || engineId == "scumm") {
+			tab->addTab(_("Archipelago"), "GameOptions_Misc");
+			_archipelagoOptions = new APBridge::OptionsWidget(tab, "GameOptions_Misc.Container", _domain);
+			_archipelagoOptions->setParentDialog(this);
+		}
+	}
+
+	//
 	// 10) The Achievements & The Statistics tabs
 	//
 	if (enginePlugin) {
@@ -517,6 +533,10 @@ void EditGameDialog::open() {
 		_engineOptions->load();
 	}
 
+	if (_archipelagoOptions) {
+		_archipelagoOptions->load();
+	}
+
 	const Common::Platform platform = Common::parsePlatform(ConfMan.get("platform", _domain));
 
 	if (ConfMan.hasKey("platform", _domain)) {
@@ -582,6 +602,10 @@ void EditGameDialog::apply() {
 
 	if (_engineOptions) {
 		_engineOptions->save();
+	}
+
+	if (_archipelagoOptions) {
+		_archipelagoOptions->save();
 	}
 
 	ConfMan.setBool("enable_hotspots", _enableHotspotsCheckbox->getState(), _domain);
@@ -742,6 +766,9 @@ void EditGameDialog::handleCommand(CommandSender *sender, uint32 cmd, uint32 dat
 			_domain = newDomain;
 			if (_engineOptions) {
 				_engineOptions->setDomain(newDomain);
+			}
+			if (_archipelagoOptions) {
+				_archipelagoOptions->setDomain(newDomain);
 			}
 			if (_backendOptions) {
 				_backendOptions->setDomain(newDomain);

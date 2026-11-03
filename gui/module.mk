@@ -2,6 +2,7 @@ MODULE := gui
 
 MODULE_OBJS := \
 	about.o \
+	archipelago-options.o \
 	browser.o \
 	chooser.o \
 	console.o \

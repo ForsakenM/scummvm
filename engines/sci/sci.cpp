@@ -466,7 +466,7 @@ Common::Error SciEngine::run() {
 		warning("Fan made script patch detected");
 	}
 
-	if (APBridge::Bridge *bridge = APBridge::Bridge::instance()) {
+	if (APBridge::Bridge *bridge = APBridge::Bridge::startGame()) {
 		_apBridge = new SciBridgeAdapter(_gamestate);
 		bridge->attach(_apBridge, getGameIdStr(), getSciVersionDesc(getSciVersion()));
 	}

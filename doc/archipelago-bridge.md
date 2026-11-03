@@ -8,11 +8,18 @@ checks, how an item is granted) lives in the client's game definition.
 
 ## Enabling
 
-Set `ap_bridge=127.0.0.1:38282` in the game's (or the global) section of
-`scummvm.ini`, or export `SCUMMVM_AP_BRIDGE=127.0.0.1:38282`. The client
-listens on that port; ScummVM connects out (libcurl socket) when a game starts
-and reconnects every 2 s if the client goes away. Builds without libcurl warn
-and run normally.
+In the launcher, select the game, click **Game Options…** and open the
+**Archipelago** tab (shown for SCI and SCUMM games). Tick **Connect to an
+Archipelago client**; the client address defaults to `127.0.0.1:38282`.
+This is stored per game as `ap_bridge_enabled` / `ap_bridge_address`.
+
+Alternatives for scripts and testing: a raw `ap_bridge=host:port` key, or the
+`SCUMMVM_AP_BRIDGE=host:port` environment variable. Settings are read each
+time a game starts.
+
+The client listens on that port; ScummVM connects out (libcurl socket) when a
+game starts and reconnects every 2 s if the client goes away. Builds without
+libcurl warn and run normally.
 
 ## Wire format
 
