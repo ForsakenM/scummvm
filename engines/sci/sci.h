@@ -50,6 +50,7 @@ class ResourceManager;
 class Kernel;
 class GameFeatures;
 class GuestAdditions;
+class SciBridgeAdapter;
 class Console;
 class AudioPlayer;
 class SoundCommandParser;
@@ -334,6 +335,7 @@ public:
 	SoundCommandParser *_soundCmd;
 	GameFeatures *_features;
 	GuestAdditions *_guestAdditions;
+	SciBridgeAdapter *_apBridge; ///< Archipelago bridge adapter, or nullptr
 
 	opcode_format (*_opcode_formats)[4];
 

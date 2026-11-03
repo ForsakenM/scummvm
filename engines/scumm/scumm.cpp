@@ -39,6 +39,7 @@
 #include "graphics/cursorman.h"
 #include "graphics/macgui/macfontmanager.h"
 
+#include "scumm/apbridge_scumm.h"
 #include "scumm/akos.h"
 #include "scumm/charset.h"
 #include "scumm/costume.h"
@@ -486,6 +487,13 @@ ScummEngine::ScummEngine(OSystem *syst, const DetectorResult &dr)
 
 
 ScummEngine::~ScummEngine() {
+	if (_apBridge) {
+		if (APBridge::Bridge *bridge = APBridge::Bridge::instance())
+			bridge->detach(_apBridge);
+		delete _apBridge;
+		_apBridge = nullptr;
+	}
+
 	delete _musicEngine;
 
 	// Delete the sound object earlier than the actors
@@ -2764,6 +2772,11 @@ int ScummEngine::getTalkSpeed() {
 #pragma mark -
 
 Common::Error ScummEngine::go() {
+	if (APBridge::Bridge *bridge = APBridge::Bridge::instance()) {
+		_apBridge = new ScummBridgeAdapter(this);
+		bridge->attach(_apBridge, _game.gameid, _game.variant ? _game.variant : "");
+	}
+
 #ifdef ENABLE_SCUMM_7_8
 	if (_game.id == GID_REBEL1) {
 		ScummEngine_v7 *vm7 = (ScummEngine_v7 *)this;
@@ -3145,6 +3158,10 @@ void ScummEngine_v0::scummLoop(int delta) {
 }
 
 void ScummEngine::scummLoop(int delta) {
+	// Archipelago bridge: a safe point to run queued client actions
+	if (_apBridge)
+		_apBridge->tick();
+
 	// Notify the script about how much time has passed, in jiffies
 	if (VAR_TIMER != 0xFF)
 		VAR(VAR_TIMER) = delta;

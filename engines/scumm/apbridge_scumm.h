@@ -1,0 +1,75 @@
+/* ScummVM - Graphic Adventure Engine
+ *
+ * ScummVM is the legal property of its developers, whose names
+ * are too numerous to list here. Please refer to the COPYRIGHT
+ * file distributed with this source distribution.
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ *
+ */
+
+#ifndef SCUMM_APBRIDGE_SCUMM_H
+#define SCUMM_APBRIDGE_SCUMM_H
+
+#include "engines/apbridge.h"
+
+namespace Scumm {
+
+class ScummEngine;
+
+/**
+ * SCUMM side of the Archipelago bridge.
+ *
+ * Events:
+ *   owner   keys [object]  args [newOwner, oldOwner, toEgo(0|1)]   (vetoable)
+ *           Every item pickup in every SCUMM version goes through here.
+ *   var     keys [index]   args [newValue, oldValue]               (vetoable)
+ *   bitvar  keys [index]   args [newValue, oldValue]               (vetoable)
+ *   room    keys [room]    args []
+ *   script  keys [number]  args []                                 (vetoable)
+ *   ctx: room, ego
+ *
+ * Actions (cmd "do"):
+ *   getVar [n]   setVar [n, value]   getBit [n]   setBit [n, 0|1]
+ *   getOwner [obj]   setOwner [obj, owner]   (owner -1 = ego)
+ *   give [obj, homeRoom]   copies the object out of its home room into the
+ *                          inventory and hands it to ego
+ *   take [obj]             removes an object from the inventory
+ *   runScript [n, args...]
+ *   room
+ */
+class ScummBridgeAdapter : public APBridge::Adapter {
+public:
+	ScummBridgeAdapter(ScummEngine *vm) : _vm(vm) {}
+
+	const char *engineId() const override { return "scumm"; }
+	void getContext(Common::HashMap<Common::String, int32> &ctx) override;
+	bool performAction(const Common::String &op, const APBridge::Keys &keys, const APBridge::Args &args,
+	                   int32 &result, Common::String &error) override;
+
+	void tick();
+
+	// Hooks; return true to veto.
+	bool onPutOwner(int obj, int owner);
+	bool onWriteVar(unsigned int var, int value);
+	void onRoom(int room);
+	bool onRunScript(int script);
+
+private:
+	ScummEngine *_vm;
+};
+
+} // End of namespace Scumm
+
+#endif

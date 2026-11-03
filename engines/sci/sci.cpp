@@ -28,6 +28,7 @@
 #include "engines/util.h"
 
 #include "sci/sci.h"
+#include "sci/engine/apbridge_sci.h"
 #include "sci/debug.h"
 #include "sci/console.h"
 #include "sci/event.h"
@@ -120,6 +121,7 @@ SciEngine::SciEngine(OSystem *syst, const ADGameDescription *desc, SciGameId gam
 	_soundCmd(nullptr),
 	_features(nullptr),
 	_guestAdditions(nullptr),
+	_apBridge(nullptr),
 	_opcode_formats(nullptr),
 	_debugState(),
 	_speedThrottleDelay(kSpeedThrottleDefaultDelay),
@@ -218,6 +220,12 @@ SciEngine::SciEngine(OSystem *syst, const ADGameDescription *desc, SciGameId gam
 }
 
 SciEngine::~SciEngine() {
+	if (_apBridge) {
+		if (APBridge::Bridge *bridge = APBridge::Bridge::instance())
+			bridge->detach(_apBridge);
+		delete _apBridge;
+		_apBridge = nullptr;
+	}
 #ifdef ENABLE_SCI32
 	delete _gfxControls32;
 	delete _gfxPaint32;
@@ -456,6 +464,11 @@ Common::Error SciEngine::run() {
 
 	if (gameHasFanMadePatch()) {
 		warning("Fan made script patch detected");
+	}
+
+	if (APBridge::Bridge *bridge = APBridge::Bridge::instance()) {
+		_apBridge = new SciBridgeAdapter(_gamestate);
+		bridge->attach(_apBridge, getGameIdStr(), getSciVersionDesc(getSciVersion()));
 	}
 
 	runGame();

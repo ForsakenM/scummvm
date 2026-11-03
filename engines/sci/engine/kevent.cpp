@@ -25,6 +25,7 @@
 #include "sci/engine/features.h"
 #include "sci/engine/guest_additions.h"
 #include "sci/engine/kernel.h"
+#include "sci/engine/apbridge_sci.h"
 #include "sci/engine/savegame.h"
 #include "sci/engine/selector.h"
 #include "sci/engine/state.h"
@@ -42,6 +43,10 @@
 namespace Sci {
 
 reg_t kGetEvent(EngineState *s, int argc, reg_t *argv) {
+	// Archipelago bridge: a safe point to run queued client actions
+	if (g_sci->_apBridge)
+		g_sci->_apBridge->tick(argc, argv);
+
 	SciEventType mask = (SciEventType)argv[0].toUint16();
 	reg_t obj = argv[1];
 	SciEvent curEvent;

@@ -21,6 +21,7 @@
 
 
 #include "common/system.h"
+#include "scumm/apbridge_scumm.h"
 #include "scumm/actor.h"
 #include "scumm/boxes.h"
 #ifdef ENABLE_HE
@@ -43,6 +44,9 @@ void ScummEngine::startScene(int room, Actor *a, int objectNr) {
 	int i, where;
 
 	debugC(DEBUG_GENERAL, "Loading room %d", room);
+
+	if (_apBridge)
+		_apBridge->onRoom(room);
 
 #ifdef ENABLE_SCUMM_7_8
 	if (_game.version >= 7) {

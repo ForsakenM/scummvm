@@ -23,6 +23,7 @@
 #include "common/util.h"
 #include "common/system.h"
 
+#include "scumm/apbridge_scumm.h"
 #include "scumm/actor.h"
 #include "scumm/object.h"
 #include "scumm/resource.h"
@@ -36,6 +37,9 @@ namespace Scumm {
 
 /* Start executing script 'script' with the given parameters */
 void ScummEngine::runScript(int script, bool freezeResistant, bool recursive, int *lvarptr, int cycle) {
+	if (_apBridge && _apBridge->onRunScript(script))
+		return;
+
 	ScriptSlot *s;
 
 	uint32 scriptOffs;
@@ -677,6 +681,9 @@ int ScummEngine::readVar(uint var) {
 
 void ScummEngine::writeVar(uint var, int value) {
 	debugC(DEBUG_VARS, "writeVar(%d, %d)", var, value);
+
+	if (_apBridge && _apBridge->onWriteVar(var, value))
+		return;
 
 	if (!(var & 0xF000)) {
 		assertRange(0, var, _numVariables - 1, "variable (writing)");

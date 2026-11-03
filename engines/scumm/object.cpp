@@ -19,6 +19,7 @@
  *
  */
 
+#include "scumm/apbridge_scumm.h"
 #include "scumm/actor.h"
 #include "scumm/bomp.h"
 #include "scumm/he/intern_he.h"
@@ -301,6 +302,9 @@ int ScummEngine::getOwner(int obj) const {
 void ScummEngine::putOwner(int obj, int owner) {
 	assertRange(0, obj, _numGlobalObjects - 1, "object");
 	assertRange(0, owner, 0xFF, "owner");
+	// Archipelago bridge: every pickup goes through here; the client may veto it
+	if (_apBridge && _apBridge->onPutOwner(obj, owner))
+		return;
 	_objectOwnerTable[obj] = owner;
 }
 

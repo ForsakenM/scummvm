@@ -36,6 +36,7 @@
 #include "sci/engine/gc.h"
 #include "sci/engine/workarounds.h"
 #include "sci/engine/scriptdebug.h"
+#include "sci/engine/apbridge_sci.h"
 
 namespace Sci {
 
@@ -200,6 +201,13 @@ ExecStack *execute_method(EngineState *s, uint16 script, uint16 pubfunct, StackP
 		logExportCall(script, pubfunct, s, argc, argp);
 	}
 
+	// Archipelago bridge: report the call, and skip it if the client vetoes it
+	reg_t apVetoAcc;
+	if (apBridgeCall(s, script, pubfunct, argc, argp, apVetoAcc)) {
+		s->r_acc = apVetoAcc;
+		return nullptr;
+	}
+
 	uint32 exportAddr = scr->validateExportFunc(pubfunct, false);
 	if (!exportAddr)
 		return nullptr;
@@ -266,6 +274,17 @@ ExecStack *send_selector(EngineState *s, reg_t send_obj, reg_t work_obj, StackPt
 		if (selectorType == kSelectorNone)
 			error("Send to invalid selector 0x%x (%s) of object at %04x:%04x", 0xffff & selector, g_sci->getKernel()->getSelectorName(0xffff & selector).c_str(), PRINT_REG(send_obj));
 
+		// Archipelago bridge: report the send; a vetoed method call is skipped
+		{
+			reg_t apVetoAcc;
+			if (apBridgeSend(s, send_obj, selector, selectorType == kSelectorMethod, argc, argp, apVetoAcc)) {
+				s->r_acc = apVetoAcc;
+				framesize -= (2 + argc);
+				argp += argc + 1;
+				continue;
+			}
+		}
+
 		ExecStackType stackType = EXEC_STACK_TYPE_VARSELECTOR;
 		StackPtr curSP = nullptr;
 		reg_t curFP = make_reg32(0, 0);
@@ -324,6 +343,8 @@ static void callKernelFunc(EngineState *s, int kernelCallNr, int argc) {
 
 	const KernelFunction &kernelCall = kernel->_kernelFuncs[kernelCallNr];
 	reg_t *argv = s->xs->sp + 1;
+
+	apBridgeKernel(s, kernelCall.name, argc, argv);
 
 	if (kernelCall.signature
 			&& !kernel->signatureMatch(kernelCall.signature, argc, argv)) {
