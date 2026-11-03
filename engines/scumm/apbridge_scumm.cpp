@@ -25,6 +25,14 @@
 
 namespace Scumm {
 
+// True when obj has an entry in the inventory array, whatever its owner field says.
+bool ScummBridgeAdapter::inInventory(int obj) const {
+	for (int i = 0; i < _vm->_numInventory; i++)
+		if (_vm->_inventory[i] == obj)
+			return true;
+	return false;
+}
+
 static APBridge::Bridge *bridge() {
 	return APBridge::Bridge::instance();
 }
@@ -159,12 +167,19 @@ bool ScummBridgeAdapter::performAction(const Common::String &op, const APBridge:
 		int owner = args.size() > 1 ? args[1] : -1;
 		if (owner < 0)
 			owner = ego;
+		// Moving an object away from the inventory must clear its inventory
+		// entry first, the way game scripts do (setOwnerOf(obj, 0) then the
+		// new owner). Otherwise the entry stays and a later give duplicates it.
+		if (owner != 0 && owner != ego && inInventory(obj))
+			_vm->setOwnerOf(obj, 0);
 		_vm->setOwnerOf(obj, owner);
 		result = owner;
 		return true;
 	}
 	if (op == "give") {
-		if (_vm->whereIsObject(obj) != WIO_INVENTORY) {
+		// Check the inventory itself, not just the owner field, so a stale
+		// entry can never be duplicated.
+		if (!inInventory(obj)) {
 			if (args.size() < 2) {
 				error = "give needs [object, homeRoom]";
 				return false;
