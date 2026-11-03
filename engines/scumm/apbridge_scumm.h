@@ -62,6 +62,7 @@ public:
 
 	// Hooks; return true to veto.
 	bool onPutOwner(int obj, int owner);
+	bool inInventory(int obj) const;
 	bool onWriteVar(unsigned int var, int value);
 	void onRoom(int room);
 	bool onRunScript(int script);
