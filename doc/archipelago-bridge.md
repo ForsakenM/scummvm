@@ -120,7 +120,8 @@ Actions: `getVar`, `setVar`, `getBit`, `setBit`, `getOwner`,
 `setOwner [obj, owner|-1]` (clears the inventory entry first when moving an
 object away from ego), `give [obj, homeRoom]` (copies the object out of its
 home room into the inventory unless it is already there), `take [obj]`,
-`runScript [n, args...]`, `room`, `invSlots` (inventory entries in use).
+`runScript [n, args...]`, `startObject [obj, verb, args...]` (runs one of an
+object's verb scripts), `room`, `invSlots` (inventory entries in use).
 The tick runs at the top of `scummLoop`.
 
 ## Example: King's Quest VI

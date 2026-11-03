@@ -227,6 +227,20 @@ bool ScummBridgeAdapter::performAction(const Common::String &op, const APBridge:
 		return false;
 	}
 
+	if (op == "startObject") {
+		// Run one of the object's verb scripts, as startObject(obj, verb, [args]) would
+		if (args.size() < 2) {
+			error = "startObject needs [object, verb, args...]";
+			return false;
+		}
+		int scriptArgs[NUM_SCRIPT_LOCAL];
+		memset(scriptArgs, 0, sizeof(scriptArgs));
+		for (uint i = 2; i < args.size() && i - 2 < NUM_SCRIPT_LOCAL; i++)
+			scriptArgs[i - 2] = args[i];
+		_vm->runObjectScript(obj, args[1], false, false, scriptArgs);
+		result = 1;
+		return true;
+	}
 	if (op == "getOwner") {
 		result = _vm->getOwner(obj);
 		return true;

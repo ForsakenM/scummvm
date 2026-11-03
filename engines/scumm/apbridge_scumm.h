@@ -56,6 +56,7 @@ class ScummEngine;
  *                          inventory and hands it to ego
  *   take [obj]             removes an object from the inventory
  *   runScript [n, args...]
+ *   startObject [obj, verb, args...]   runs one of an object's verb scripts
  *   room
  *   invSlots              inventory entries in use (SCUMM caps them, 80 in v5)
  */
