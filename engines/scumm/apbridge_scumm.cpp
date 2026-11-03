@@ -20,6 +20,7 @@
  */
 
 #include "scumm/apbridge_scumm.h"
+#include "scumm/actor.h"
 #include "scumm/scumm.h"
 #include "scumm/object.h"
 #include "scumm/script.h"
@@ -47,6 +48,11 @@ void ScummBridgeAdapter::getContext(Common::HashMap<Common::String, int32> &ctx)
 	ctx["room"] = _vm->_currentRoom;
 	if (_vm->VAR_EGO != 0xFF)
 		ctx["ego"] = _vm->VAR(_vm->VAR_EGO);
+	// Where the mouse is, in room coordinates: lets a client tell where a click landed
+	if (_vm->VAR_VIRT_MOUSE_X != 0xFF) {
+		ctx["mx"] = _vm->VAR(_vm->VAR_VIRT_MOUSE_X);
+		ctx["my"] = _vm->VAR(_vm->VAR_VIRT_MOUSE_Y);
+	}
 }
 
 void ScummBridgeAdapter::tick() {
@@ -172,6 +178,42 @@ bool ScummBridgeAdapter::performAction(const Common::String &op, const APBridge:
                                        int32 &result, Common::String &error) {
 	int ego = (_vm->VAR_EGO != 0xFF) ? _vm->VAR(_vm->VAR_EGO) : 0;
 
+	if (op == "goto") {
+		// Move ego to another room, as loadRoomWithEgo(obj, room, x, y) does: placed at
+		// object obj's walk-to spot and walking to (x, y), or with obj 0 put at (x, y).
+		if (args.empty()) {
+			error = "goto needs [room, object, x, y]";
+			return false;
+		}
+		int room = args[0];
+		int obj = args.size() > 1 ? args[1] : 0;
+		int x = args.size() > 3 ? args[2] : -1;
+		int y = args.size() > 3 ? args[3] : -1;
+		if (room <= 0 || room >= _vm->_numRooms) {
+			error = "room out of range";
+			return false;
+		}
+		Actor *a = _vm->derefActor(_vm->VAR(_vm->VAR_EGO), "apbridge goto");
+		if (obj) {
+			a->putActor(room);
+			_vm->_egoPositioned = false;
+			_vm->VAR(_vm->VAR_WALKTO_OBJ) = obj;
+			_vm->startScene(a->_room, a, obj);
+			_vm->VAR(_vm->VAR_WALKTO_OBJ) = 0;
+		} else {
+			// No entry object: load the room as loadRoom does, then place ego
+			// (what putActorInRoom + putActor do in a script)
+			_vm->startScene(room, nullptr, 0);
+			a->putActor(x != -1 ? x : 160, x != -1 ? y : 100, room);
+		}
+		_vm->camera._cur.x = _vm->camera._dest.x = a->getPos().x;
+		_vm->setCameraFollows(a);
+		_vm->_fullRedraw = true;
+		if (obj && x != -1)
+			a->startWalkActor(x, y, -1);
+		result = _vm->_currentRoom;
+		return true;
+	}
 	if (op == "invSlots") {
 		// Raw inventory entries in use, whatever their owners (the cap is _numInventory)
 		result = 0;

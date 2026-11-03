@@ -96,7 +96,8 @@ Events:
 | `script` | `[number]` | (vetoable) |
 | `getowner` | `[object, by, number]` | `[owner]` (vetoable; v5). A script asked who owns an object. `by` is `object` (number = the object whose verb script is running), `global`, `local`, `entry` or `exit` (number = room). |
 
-Context: `room`, `ego`.
+Context: `room`, `ego`, `mx`/`my` (the mouse in room coordinates, so a client can
+tell where a click landed).
 
 A `getowner` veto replaces the answer the script gets with the rule's `value`.
 The real owner does not change, so the inventory, other scripts and other
@@ -121,7 +122,10 @@ Actions: `getVar`, `setVar`, `getBit`, `setBit`, `getOwner`,
 object away from ego), `give [obj, homeRoom]` (copies the object out of its
 home room into the inventory unless it is already there), `take [obj]`,
 `runScript [n, args...]`, `startObject [obj, verb, args...]` (runs one of an
-object's verb scripts), `room`, `invSlots` (inventory entries in use).
+object's verb scripts), `goto [room, obj, x, y]` (moves ego to another room as `loadRoomWithEgo` does:
+placed at object `obj`'s walk-to spot and walking to `x, y`; with `obj` 0 the room
+loads as `loadRoom` does and ego is put at `x, y`), `room`, `invSlots` (inventory
+entries in use).
 The tick runs at the top of `scummLoop`.
 
 ## Example: King's Quest VI

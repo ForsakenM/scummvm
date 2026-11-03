@@ -44,7 +44,7 @@ class ScummEngine;
  *           or exit (number = room). A veto replaces the answer with the
  *           rule's value; the real owner is unchanged, so the inventory and
  *           every other script still see the truth.
- *   ctx: room, ego
+ *   ctx: room, ego, mx/my (mouse in room coordinates)
  *
  * A pickup whose ownership change is vetoed also drops the inventory entry
  * the pickup had already created, so vetoed checks never fill the inventory.
@@ -58,6 +58,7 @@ class ScummEngine;
  *   runScript [n, args...]
  *   startObject [obj, verb, args...]   runs one of an object's verb scripts
  *   room
+ *   goto [room, obj, x, y]   move ego to a room as loadRoomWithEgo does (obj 0: put at x, y)
  *   invSlots              inventory entries in use (SCUMM caps them, 80 in v5)
  */
 class ScummBridgeAdapter : public APBridge::Adapter {
