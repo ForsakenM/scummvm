@@ -2,6 +2,7 @@ MODULE := engines/scumm
 
 MODULE_OBJS := \
 	actor.o \
+	apbridge_scumm.o \
 	akos.o \
 	base-costume.o \
 	base-costume-optimised.o \

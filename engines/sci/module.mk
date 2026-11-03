@@ -8,6 +8,7 @@ MODULE_OBJS := \
 	metaengine.o \
 	sci.o \
 	util.o \
+	engine/apbridge_sci.o \
 	engine/features.o \
 	engine/file.o \
 	engine/gc.o \

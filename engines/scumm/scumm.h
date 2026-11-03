@@ -533,8 +533,11 @@ extern const char *const insaneKeymapId;
 /**
  * Base class for all SCUMM engines.
  */
+class ScummBridgeAdapter;
+
 class ScummEngine : public Engine, public Common::Serializable {
 	friend class ScummDebugger;
+	friend class ScummBridgeAdapter;
 	friend class CharsetRenderer;
 	friend class CharsetRendererClassic;
 	friend class CharsetRendererTownsClassic;
@@ -927,6 +930,7 @@ protected:
 	/* Global resource tables */
 	int _numVariables = 0;
 	int _numBitVariables = 0;
+	ScummBridgeAdapter *_apBridge = nullptr; ///< Archipelago bridge adapter, or nullptr
 	int _numLocalObjects = 0;
 	int _numGlobalObjects = 0;
 	int _numArray = 0;
