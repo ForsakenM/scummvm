@@ -55,8 +55,15 @@ Events:
 |-----------|------|------|
 | `call`    | `[script, export]` | procedure arguments |
 | `send`    | `[object, selector, class]` | method arguments (vetoable) |
-| `setprop` | `[object, selector, class]` | `[new value]` |
+| `setprop` | `[object, selector, class]` | `[new value]` (vetoable: the write is skipped) |
+| `getprop` | `[object, selector, class]` | none (vetoable: `value` replaces what the script reads) |
 | `kernel`  | `[name]` | kernel call arguments |
+
+`getprop` only sees reads made by message (`(obj prop:)`). An object's own
+methods read their properties with direct VM opcodes, which are not reported.
+That lets a client change what *other* scripts see, e.g. keep a room showing
+an item whose inventory object has already been handed to the player, while
+the inventory itself (`has:`, the inventory window) still sees the real value.
 
 Context: `room` (global 11).
 

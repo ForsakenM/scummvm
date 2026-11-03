@@ -35,7 +35,10 @@ struct EngineState;
  * Events:
  *   call     keys [script, export]          args = procedure arguments
  *   send     keys [object, selector, class] args = method arguments
- *   setprop  keys [object, selector, class] args = [new value]
+ *   setprop  keys [object, selector, class] args = [new value]  (vetoable: skip write)
+ *   getprop  keys [object, selector, class] args = []           (vetoable: replace value)
+ *            only reads made by message, e.g. "((gInventory at: 9) owner:)";
+ *            an object's own methods read properties directly and are unaffected
  *   kernel   keys [name]                    args = kernel arguments
  *   ctx: room (global 11)
  *
