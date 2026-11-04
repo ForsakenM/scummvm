@@ -22,11 +22,13 @@
 #ifndef SCUMM_APBRIDGE_SCUMM_H
 #define SCUMM_APBRIDGE_SCUMM_H
 
+#include "common/array.h"
 #include "engines/apbridge.h"
 
 namespace Scumm {
 
 class ScummEngine;
+class Actor;
 
 /**
  * SCUMM side of the Archipelago bridge.
@@ -61,6 +63,10 @@ class ScummEngine;
  *   goto [room, obj, x, y]   move ego to a room as loadRoomWithEgo does (obj 0: put at x, y)
  *   stopSounds            stops all music and sound effects
  *   talk                  [text] [actor]: the actor (default ego) says text over their head
+ *   actorColor [actor, costume, slot, r, g, b]   recolors one costume color of an actor (0 = ego)
+ *                         while it wears that costume: drawn with the room palette's closest
+ *                         match to r, g, b, re-matched in every room. r = -1 removes it.
+ *   clearColors           removes every actorColor
  *   invSlots              inventory entries in use (SCUMM caps them, 80 in v5)
  */
 class ScummBridgeAdapter : public APBridge::Adapter {
@@ -83,8 +89,16 @@ public:
 	bool onWriteVar(unsigned int var, int value);
 	void onRoom(int room);
 	bool onRunScript(int script);
+	void tintActor(Actor *a);
 
 private:
+	struct ColorOverride {
+		int actor, costume, slot;
+		byte r, g, b;
+	};
+	Common::Array<ColorOverride> _colors;
+	void untint(const ColorOverride &c);
+
 	ScummEngine *_vm;
 	int _vetoedOwnerObj = 0;  ///< last object whose owner change was vetoed
 };
