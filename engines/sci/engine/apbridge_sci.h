@@ -51,6 +51,11 @@ struct EngineState;
  *   send       keys [obj, selector]          args = method arguments
  *       obj is an object name, "name@script" to pick the object defined in
  *       that script when a name is ambiguous, or "global:N" for global N
+ *   talk       keys [text, title]
+ *       Shows text in a Sierra-style message window (titled when a title is
+ *       given) and waits for a click, a key or a timeout, as the games' own
+ *       Print does. Result 0, without showing anything, while another window
+ *       is open; SCI16 games only.
  */
 class SciBridgeAdapter : public APBridge::Adapter {
 public:
@@ -68,6 +73,7 @@ public:
 
 private:
 	reg_t resolveObject(const Common::String &name);
+	bool showTextBox(const APBridge::Keys &keys, int32 &result, Common::String &error);
 	bool globalIndex(int32 n) const;
 
 	EngineState *_state;
