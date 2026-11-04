@@ -77,7 +77,7 @@ Context: `room` (global 11).
 Actions: `getGlobal [n]`, `setGlobal [n, v]`, `getBit [base, bit]`,
 `setBit [base, bit, 0|1]` (Sierra bit arrays: word `base + bit/16`, mask
 `0x8000 >> bit%16`), `getProp`/`setProp keys [obj, selector]`,
-`send keys [obj, selector] args [...]`, `room`. Objects are named directly,
+`send keys [obj, selector] args [...]`, `room`, `talk keys [text, title]` (a Sierra-style message window, titled when a title is given, that waits for a click, a key or a timeout like the games' own Print; 0 while the game has a window of its own open; 16-bit SCI only). Objects are named directly,
 as `name@script` when a name is ambiguous, or as `global:N`.
 
 The tick runs inside `kGetEvent`, so `send` actions execute from kernel
@@ -124,7 +124,7 @@ home room into the inventory unless it is already there), `take [obj]`,
 `runScript [n, args...]`, `startObject [obj, verb, args...]` (runs one of an
 object's verb scripts), `goto [room, obj, x, y]` (moves ego to another room as `loadRoomWithEgo` does:
 placed at object `obj`'s walk-to spot and walking to `x, y`; with `obj` 0 the room
-loads as `loadRoom` does and ego is put at `x, y`), `room`, `stopSounds` (all music and effects), `talk [text] [actor]` (the actor, default ego, says the text over their head in the game's font, talk color and animation; 0 means busy: someone is talking, a cutscene runs or the player has no control), `invSlots` (inventory
+loads as `loadRoom` does and ego is put at `x, y`), `room`, `stopSounds` (all music and effects), `talk [text] [actor]` (the actor, default ego, says the text over their head in the game's font, talk color and animation; 0 means busy: someone is talking, a cutscene runs or the player has no control), `actorColor [actor, costume, slot, r, g, b]` (while the actor, 0 = ego, wears that costume, the costume color slot is drawn with the room palette's closest match to r, g, b; r = -1 removes it), `clearColors`, `invSlots` (inventory
 entries in use).
 The tick runs at the top of `scummLoop`.
 
