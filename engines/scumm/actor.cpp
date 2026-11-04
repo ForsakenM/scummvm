@@ -23,7 +23,6 @@
 #include "common/scummsys.h"
 #include "scumm/scumm.h"
 #include "scumm/actor.h"
-#include "scumm/apbridge_scumm.h"
 #include "scumm/actor_he.h"
 #include "scumm/akos.h"
 #include "scumm/boxes.h"
@@ -2570,8 +2569,6 @@ void Actor::prepareDrawActorCostume(BaseCostumeRenderer *bcr) {
 	}
 
 	bcr->setCostume(_costume, (_vm->_game.heversion == 0) ? 0 : _heShadow);
-	if (_vm->apBridge())
-		_vm->apBridge()->tintActor(this);
 	bcr->setPalette(_palette);
 	bcr->setFacing(this);
 

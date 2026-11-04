@@ -175,25 +175,25 @@ bool ScummBridgeAdapter::onRunScript(int script) {
 	return b->notify("script", keys, APBridge::Args()).veto;
 }
 
-void ScummBridgeAdapter::untint(const ColorOverride &c) {
-	// Hand the slot back to the costume's own color
-	int ego = (_vm->VAR_EGO != 0xFF) ? _vm->VAR(_vm->VAR_EGO) : 0;
-	Actor *a = _vm->derefActorSafe(c.actor ? c.actor : ego, "apbridge untint");
-	if (a && a->_costume == c.costume)
-		a->setPalette(c.slot, 0xFF);
-}
-
-void ScummBridgeAdapter::tintActor(Actor *a) {
+int ScummBridgeAdapter::recolor(int actor, int color) {
 	if (_colors.empty())
-		return;
+		return color;
 	int ego = (_vm->VAR_EGO != 0xFF) ? _vm->VAR(_vm->VAR_EGO) : 0;
+	Actor *a = _vm->derefActorSafe(actor, "apbridge recolor");
+	int costume = a ? a->_costume : -1;
 	for (uint i = 0; i < _colors.size(); i++) {
 		const ColorOverride &c = _colors[i];
-		if ((c.actor ? c.actor : ego) != a->_number || c.costume != a->_costume)
-			continue;
-		// The room palette's closest color, matched as the game matches remapped actor colors
-		a->setPalette(c.slot, _vm->remapPaletteColor(c.r, c.g, c.b, -1));
+		if ((c.actor ? c.actor : ego) == actor && c.index == color && (!c.costume || c.costume == costume)) {
+			// The room palette's closest color, matched as the game matches remapped actor colors
+			return _vm->remapPaletteColor(c.r, c.g, c.b, -1);
+		}
 	}
+	return color;
+}
+
+void ScummBridgeAdapter::redrawActors() {
+	for (int i = 1; i < _vm->_numActors; i++)
+		_vm->_actors[i]->_needRedraw = true;
 }
 
 bool ScummBridgeAdapter::performAction(const Common::String &op, const APBridge::Keys &keys, const APBridge::Args &args,
@@ -275,36 +275,34 @@ bool ScummBridgeAdapter::performAction(const Common::String &op, const APBridge:
 		return true;
 	}
 	if (op == "clearColors") {
-		while (!_colors.empty()) {
-			untint(_colors.back());
-			_colors.pop_back();
-		}
+		_colors.clear();
+		redrawActors();
 		result = 1;
 		return true;
 	}
 	if (op == "actorColor") {
-		if (args.size() < 6) {
-			error = "actorColor needs [actor, costume, slot, r, g, b]";
+		if (args.size() < 5) {
+			error = "actorColor needs [actor, color, r, g, b]";
 			return false;
 		}
-		int actor = args[0], costume = args[1], slot = args[2];
-		if (slot < 0 || slot >= 256) {
-			error = "slot out of range";
+		int actor = args[0], index = args[1];
+		int costume = args.size() > 5 ? args[5] : 0;
+		if (index < 0 || index >= 256) {
+			error = "color out of range";
 			return false;
 		}
 		for (uint i = 0; i < _colors.size(); i++) {
-			if (_colors[i].actor == actor && _colors[i].costume == costume && _colors[i].slot == slot) {
-				untint(_colors[i]);
+			if (_colors[i].actor == actor && _colors[i].index == index && _colors[i].costume == costume) {
 				_colors.remove_at(i);
 				break;
 			}
 		}
-		if (args[3] >= 0) {
-			ColorOverride c = { actor, costume, slot, (byte)CLIP<int32>(args[3], 0, 255),
-			                    (byte)CLIP<int32>(args[4], 0, 255), (byte)CLIP<int32>(args[5], 0, 255) };
+		if (args[2] >= 0) {
+			ColorOverride c = { actor, index, costume, (byte)CLIP<int32>(args[2], 0, 255),
+			                    (byte)CLIP<int32>(args[3], 0, 255), (byte)CLIP<int32>(args[4], 0, 255) };
 			_colors.push_back(c);
 		}
-		_vm->_fullRedraw = true;
+		redrawActors();
 		result = _colors.size();
 		return true;
 	}
