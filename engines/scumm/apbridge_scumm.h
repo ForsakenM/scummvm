@@ -60,6 +60,7 @@ class ScummEngine;
  *   room
  *   goto [room, obj, x, y]   move ego to a room as loadRoomWithEgo does (obj 0: put at x, y)
  *   stopSounds            stops all music and sound effects
+ *   talk                  [text] [actor]: the actor (default ego) says text over their head
  *   invSlots              inventory entries in use (SCUMM caps them, 80 in v5)
  */
 class ScummBridgeAdapter : public APBridge::Adapter {
