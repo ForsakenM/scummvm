@@ -29,6 +29,13 @@
 #include "sci/engine/selector.h"
 #include "sci/engine/state.h"
 #include "sci/engine/vm.h"
+#include "sci/event.h"
+#include "sci/graphics/ports.h"
+#include "sci/graphics/screen.h"
+#include "sci/graphics/text16.h"
+#include "sci/resource/resource.h"
+
+#include "common/system.h"
 
 namespace Sci {
 
@@ -252,8 +259,82 @@ bool SciBridgeAdapter::performAction(const Common::String &op, const APBridge::K
 		return true;
 	}
 
+	if (op == "talk")
+		return showTextBox(keys, result, error);
+
 	error = "unknown op " + op;
 	return false;
+}
+
+bool SciBridgeAdapter::showTextBox(const APBridge::Keys &keys, int32 &result, Common::String &error) {
+	GfxPorts *ports = g_sci->_gfxPorts;
+	GfxText16 *text16 = g_sci->_gfxText16;
+	if (!ports || !text16 || !ports->_picWind) {
+		error = "talk needs a 16-bit SCI game";
+		return false;
+	}
+	if (keys.empty() || keys[0].empty()) {
+		error = "talk needs the text as its key";
+		return false;
+	}
+	// Wait while the game shows a window of its own (a message, a talker, a menu)
+	if (!ports->isFrontWindow(ports->_picWind)) {
+		result = 0;
+		return true;
+	}
+
+	// Printable ASCII only, as the game fonts have nothing else
+	Common::String text, title;
+	for (uint i = 0; i < keys[0].size() && text.size() < 400; i++) {
+		byte c = (byte)keys[0][i];
+		if (c == '\n' || (c >= 0x20 && c < 0x7F))
+			text += (char)c;
+	}
+	if (keys.size() > 1) {
+		for (uint i = 0; i < keys[1].size() && title.size() < 40; i++) {
+			byte c = (byte)keys[1][i];
+			if (c >= 0x20 && c < 0x7F)
+				title += (char)c;
+		}
+	}
+
+	// Lay the window out as the games' Print does: text up to 200 pixels wide in the
+	// system font, centred in the picture area, black on white
+	const GuiResourceId font = 0;
+	Port *oldPort = ports->setPort(ports->_wmgrPort);
+	Common::Rect textRect;
+	text16->Size(textRect, text.c_str(), 0, font, 200);
+	const Common::Rect &pic = ports->_picWind->rect;
+	int16 w = textRect.width(), h = textRect.height();
+	int16 left = pic.left + (pic.width() - w) / 2;
+	int16 top = pic.top + (pic.height() - h) / 2;
+	Common::Rect dims(left, top, left + w, top + h);
+	uint16 style = title.empty() ? 0 : SCI_WINDOWMGR_STYLE_TITLE;
+	Window *wnd = ports->addWindow(dims, nullptr, title.empty() ? nullptr : title.c_str(), style, -1, false);
+	bool ega = g_sci->getResMan()->getViewType() == kViewEga;
+	wnd->penClr = 0;
+	wnd->backClr = ega ? 15 : 255;
+	ports->drawWindow(wnd);
+	ports->setPort(wnd);
+	text16->Box(text.c_str(), 0, true, Common::Rect(0, 0, w, h), SCI_TEXT16_ALIGNMENT_LEFT, font);
+	g_system->updateScreen();
+
+	// Wait like a non-modeless Print: a click or a key closes it, or it times out
+	uint32 end = g_system->getMillis() + CLIP<uint32>(2500 + 60 * text.size(), 3000, 12000);
+	EventManager *events = g_sci->getEventManager();
+	while (g_system->getMillis() < end && !g_engine->shouldQuit()) {
+		SciEvent ev = events->getSciEvent(kSciEventMousePress | kSciEventKeyDown);
+		if (ev.type != kSciEventNone)
+			break;
+		g_system->updateScreen();
+		g_system->delayMillis(10);
+	}
+
+	ports->removeWindow(wnd, false);
+	ports->setPort(oldPort);
+	g_system->updateScreen();
+	result = 1;
+	return true;
 }
 
 } // End of namespace Sci
