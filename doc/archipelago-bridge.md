@@ -47,12 +47,24 @@ Newline-delimited JSON, one object per line, both directions.
 | `trace`   | `kind`, `on` | Stream every event of a kind. Cleared on disconnect. |
 | `do`      | `req`, `op`, `keys`, `args`, `asGame` | Run an engine action (below) at the next safe point. With `asGame: true` the action counts as the player's own (rules can veto what it causes), for test harnesses. |
 | `say`     | `text` | Show an on-screen message. |
+| `help`    | `text` | Set the Archipelago Help page (Markdown). Send it again whenever it changes. |
 | `ping`    | `req` | Liveness check. |
 
 Rules survive client disconnects, so suppressed pickups stay suppressed; they
 are cleared when a new game starts. Events raised by a `do` action are reported
 but never vetoed, so "give item" actions are not swallowed by "suppress
 pickup" rules.
+
+### Archipelago Help page
+
+A game running with the bridge gets an **Archipelago Help** button in the
+global main menu (Ctrl+F5), in the slot of the game's own help button; the
+game's help, when it has one, is a button on that page. The global keymap
+action "Archipelago help" (Ctrl+F6 by default, rebindable under Options,
+Keymaps, Global) opens the page too. The page shows the text of the last
+`help` message, rendered as Markdown, or a "waiting for the client" note.
+ScummVM's Markdown renderer drops the first letter of a plain paragraph that
+follows a list, so start such a block with a heading or a list item.
 
 ## SCI (Sierra SCI0–SCI1.1)
 
