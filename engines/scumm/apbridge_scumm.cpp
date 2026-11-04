@@ -175,20 +175,41 @@ bool ScummBridgeAdapter::onRunScript(int script) {
 	return b->notify("script", keys, APBridge::Args()).veto;
 }
 
-int ScummBridgeAdapter::recolor(int actor, int color) {
+const ScummBridgeAdapter::ColorOverride *ScummBridgeAdapter::findColor(int actor, int color) {
 	if (_colors.empty())
-		return color;
+		return nullptr;
 	int ego = (_vm->VAR_EGO != 0xFF) ? _vm->VAR(_vm->VAR_EGO) : 0;
 	Actor *a = _vm->derefActorSafe(actor, "apbridge recolor");
 	int costume = a ? a->_costume : -1;
 	for (uint i = 0; i < _colors.size(); i++) {
 		const ColorOverride &c = _colors[i];
-		if ((c.actor ? c.actor : ego) == actor && c.index == color && (!c.costume || c.costume == costume)) {
-			// The room palette's closest color, matched as the game matches remapped actor colors
-			return _vm->remapPaletteColor(c.r, c.g, c.b, -1);
+		if ((c.actor ? c.actor : ego) == actor && c.index == color && (!c.costume || c.costume == costume))
+			return &c;
+	}
+	return nullptr;
+}
+
+int ScummBridgeAdapter::recolor(int actor, int color) {
+	// The room palette's closest color, matched as the game matches remapped actor colors
+	const ColorOverride *c = findColor(actor, color);
+	return c ? _vm->remapPaletteColor(c->r, c->g, c->b, -1) : color;
+}
+
+int ScummBridgeAdapter::recolorAlt(int actor, int color) {
+	const ColorOverride *c = findColor(actor, color);
+	return (c && c->r2 >= 0) ? _vm->remapPaletteColor(c->r2, c->g2, c->b2, -1) : -1;
+}
+
+bool ScummBridgeAdapter::pattern(int actor, byte &kind, byte &size) {
+	int ego = (_vm->VAR_EGO != 0xFF) ? _vm->VAR(_vm->VAR_EGO) : 0;
+	for (uint i = 0; i < _patterns.size(); i++) {
+		if ((_patterns[i].actor ? _patterns[i].actor : ego) == actor) {
+			kind = _patterns[i].kind;
+			size = _patterns[i].size;
+			return kind != 0;
 		}
 	}
-	return color;
+	return false;
 }
 
 void ScummBridgeAdapter::redrawActors() {
@@ -276,8 +297,28 @@ bool ScummBridgeAdapter::performAction(const Common::String &op, const APBridge:
 	}
 	if (op == "clearColors") {
 		_colors.clear();
+		_patterns.clear();
 		redrawActors();
 		result = 1;
+		return true;
+	}
+	if (op == "actorPattern") {
+		if (args.size() < 3) {
+			error = "actorPattern needs [actor, kind, size]";
+			return false;
+		}
+		for (uint i = 0; i < _patterns.size(); i++) {
+			if (_patterns[i].actor == args[0]) {
+				_patterns.remove_at(i);
+				break;
+			}
+		}
+		if (args[1] > 0) {
+			Pattern p = { (int)args[0], (byte)CLIP<int32>(args[1], 0, 255), (byte)CLIP<int32>(args[2], 1, 64) };
+			_patterns.push_back(p);
+		}
+		redrawActors();
+		result = _patterns.size();
 		return true;
 	}
 	if (op == "actorColor") {
@@ -299,7 +340,12 @@ bool ScummBridgeAdapter::performAction(const Common::String &op, const APBridge:
 		}
 		if (args[2] >= 0) {
 			ColorOverride c = { actor, index, costume, (byte)CLIP<int32>(args[2], 0, 255),
-			                    (byte)CLIP<int32>(args[3], 0, 255), (byte)CLIP<int32>(args[4], 0, 255) };
+			                    (byte)CLIP<int32>(args[3], 0, 255), (byte)CLIP<int32>(args[4], 0, 255), -1, 0, 0 };
+			if (args.size() > 8 && args[6] >= 0) {
+				c.r2 = CLIP<int32>(args[6], 0, 255);
+				c.g2 = CLIP<int32>(args[7], 0, 255);
+				c.b2 = CLIP<int32>(args[8], 0, 255);
+			}
 			_colors.push_back(c);
 		}
 		redrawActors();
