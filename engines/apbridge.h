@@ -51,6 +51,10 @@ namespace Networking {
 class Socket;
 }
 
+namespace GUI {
+class Dialog;
+}
+
 namespace APBridge {
 
 typedef Common::Array<Common::String> Keys;
@@ -117,6 +121,20 @@ public:
 	/** Call once per frame from a point where performing actions is safe. */
 	void tick();
 
+	/**
+	 * The help page the client provides (Markdown), shown by the "Archipelago
+	 * Help" button of the main menu and by its hotkey.
+	 */
+	const Common::String &helpText() const { return _helpText; }
+
+	/** Result of the help dialog when the player asks for the game's own help. */
+	enum { kHelpResultGameHelp = 1 };
+	/**
+	 * Create the help dialog. With @p withGameHelp it also has a "Game Help"
+	 * button, which closes it with result kHelpResultGameHelp.
+	 */
+	GUI::Dialog *createHelpDialog(bool withGameHelp);
+
 	/** True while the bridge executes a client action (hooks must not veto). */
 	bool inAction() const { return _inAction; }
 
@@ -158,6 +176,7 @@ private:
 	Common::HashMap<Common::String, bool> _watchedKinds;
 	Common::HashMap<Common::String, bool> _tracedKinds;
 	Common::Array<Common::String> _outQueue; ///< events raised before connect
+	Common::String _helpText;
 };
 
 } // End of namespace APBridge

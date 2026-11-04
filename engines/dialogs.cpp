@@ -42,6 +42,7 @@
 #include "graphics/font.h"
 
 #include "engines/dialogs.h"
+#include "engines/apbridge.h"
 #include "engines/engine.h"
 #include "engines/metaengine.h"
 
@@ -104,6 +105,19 @@ MainMenuDialog::~MainMenuDialog() {
 	delete _saveDialog;
 }
 
+void MainMenuDialog::open() {
+	// A game using the Archipelago bridge gets "Archipelago Help" in the game
+	// help slot; the game's own help, if any, is a button on that page. Set
+	// here because engines create this dialog before their bridge starts.
+	if (APBridge::Bridge::instance()) {
+		_helpButton->setLabel(_helpButton->cleanupHotkey(Common::U32String("Archipelago ~H~elp")));
+		_helpButton->setCmd(kArchipelagoCmd);
+		_helpButton->setVisible(true);
+		_helpButton->setEnabled(true);
+	}
+	GUI::Dialog::open();
+}
+
 void MainMenuDialog::handleCommand(GUI::CommandSender *sender, uint32 cmd, uint32 data) {
 	switch (cmd) {
 	case kPlayCmd:
@@ -129,6 +143,17 @@ void MainMenuDialog::handleCommand(GUI::CommandSender *sender, uint32 cmd, uint3
 					"Please consult the README for basic information, and for "
 					"instructions on how to obtain further assistance."));
 		dialog.runModal();
+		}
+		break;
+	case kArchipelagoCmd: {
+		APBridge::Bridge *bridge = APBridge::Bridge::instance();
+		if (bridge) {
+			GUI::Dialog *dialog = bridge->createHelpDialog(_engine->hasFeature(Engine::kSupportsHelp));
+			int result = dialog->runModal();
+			delete dialog;
+			if (result == APBridge::Bridge::kHelpResultGameHelp)
+				handleCommand(sender, kHelpCmd, 0);
+		}
 		}
 		break;
 	case kMainHelpCmd: {

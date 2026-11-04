@@ -47,7 +47,8 @@ public:
 		kAboutCmd = 'ABOU',
 		kQuitCmd = 'QUIT',
 		kLauncherCmd = 'LNCR',
-		kChooseCmd = 'CHOS'
+		kChooseCmd = 'CHOS',
+		kArchipelagoCmd = 'APHL'
 	};
 
 public:
@@ -57,6 +58,8 @@ public:
 	virtual void handleCommand(GUI::CommandSender *sender, uint32 cmd, uint32 data) override;
 
 	virtual void reflowLayout() override;
+
+	void open() override;
 
 protected:
 	void save();
