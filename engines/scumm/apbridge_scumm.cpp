@@ -175,6 +175,27 @@ bool ScummBridgeAdapter::onRunScript(int script) {
 	return b->notify("script", keys, APBridge::Args()).veto;
 }
 
+void ScummBridgeAdapter::untint(const ColorOverride &c) {
+	// Hand the slot back to the costume's own color
+	int ego = (_vm->VAR_EGO != 0xFF) ? _vm->VAR(_vm->VAR_EGO) : 0;
+	Actor *a = _vm->derefActorSafe(c.actor ? c.actor : ego, "apbridge untint");
+	if (a && a->_costume == c.costume)
+		a->setPalette(c.slot, 0xFF);
+}
+
+void ScummBridgeAdapter::tintActor(Actor *a) {
+	if (_colors.empty())
+		return;
+	int ego = (_vm->VAR_EGO != 0xFF) ? _vm->VAR(_vm->VAR_EGO) : 0;
+	for (uint i = 0; i < _colors.size(); i++) {
+		const ColorOverride &c = _colors[i];
+		if ((c.actor ? c.actor : ego) != a->_number || c.costume != a->_costume)
+			continue;
+		// The room palette's closest color, matched as the game matches remapped actor colors
+		a->setPalette(c.slot, _vm->remapPaletteColor(c.r, c.g, c.b, -1));
+	}
+}
+
 bool ScummBridgeAdapter::performAction(const Common::String &op, const APBridge::Keys &keys, const APBridge::Args &args,
                                        int32 &result, Common::String &error) {
 	int ego = (_vm->VAR_EGO != 0xFF) ? _vm->VAR(_vm->VAR_EGO) : 0;
@@ -251,6 +272,40 @@ bool ScummBridgeAdapter::performAction(const Common::String &op, const APBridge:
 		_vm->_actorToPrintStrFor = actor;
 		_vm->printString(0, (const byte *)msg.c_str());
 		result = 1;
+		return true;
+	}
+	if (op == "clearColors") {
+		while (!_colors.empty()) {
+			untint(_colors.back());
+			_colors.pop_back();
+		}
+		result = 1;
+		return true;
+	}
+	if (op == "actorColor") {
+		if (args.size() < 6) {
+			error = "actorColor needs [actor, costume, slot, r, g, b]";
+			return false;
+		}
+		int actor = args[0], costume = args[1], slot = args[2];
+		if (slot < 0 || slot >= 256) {
+			error = "slot out of range";
+			return false;
+		}
+		for (uint i = 0; i < _colors.size(); i++) {
+			if (_colors[i].actor == actor && _colors[i].costume == costume && _colors[i].slot == slot) {
+				untint(_colors[i]);
+				_colors.remove_at(i);
+				break;
+			}
+		}
+		if (args[3] >= 0) {
+			ColorOverride c = { actor, costume, slot, (byte)CLIP<int32>(args[3], 0, 255),
+			                    (byte)CLIP<int32>(args[4], 0, 255), (byte)CLIP<int32>(args[5], 0, 255) };
+			_colors.push_back(c);
+		}
+		_vm->_fullRedraw = true;
+		result = _colors.size();
 		return true;
 	}
 	if (op == "invSlots") {
