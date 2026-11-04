@@ -32,6 +32,11 @@
 
 #ifdef USE_LIBCURL
 #include "backends/networking/basic/socket.h"
+
+#include "gui/dialog.h"
+#include "gui/gui-manager.h"
+#include "gui/widget.h"
+#include "gui/widgets/richtext.h"
 #endif
 
 namespace APBridge {
@@ -403,6 +408,8 @@ void Bridge::handleLine(const Common::String &line) {
 			_inAction = false;
 			reply["value"] = new Common::JSONValue((long long int)result);
 		}
+	} else if (cmd == "help") {
+		_helpText = o.contains("text") && o["text"]->isString() ? o["text"]->asString() : "";
 	} else if (cmd == "ping") {
 		// just reply
 	} else {
@@ -416,6 +423,65 @@ void Bridge::handleLine(const Common::String &line) {
 	Common::JSONValue v(reply);
 	send(v.stringify());
 	delete root;
+}
+
+namespace {
+
+class HelpDialog : public GUI::Dialog {
+public:
+	enum {
+		kCloseCmd = 'APCL',
+		kGameHelpCmd = 'APGH'
+	};
+
+	HelpDialog(const Common::String &text, bool withGameHelp)
+		: GUI::Dialog(0, 0, 10, 10, true) {
+		const int guiW = g_gui.getGUIWidth(), guiH = g_gui.getGUIHeight();
+		const bool lowres = guiW <= 320;
+		const int pad = lowres ? 4 : 10;
+		const int buttonW = lowres ? 72 : 110, buttonH = lowres ? 16 : 22;
+		const int w = MIN(guiW - 2 * pad, 640);
+		const int h = guiH - 2 * pad;
+		// Dialog(x, y, w, h, scale) stores scaled values; set them directly.
+		const float sf = g_gui.getScaleFactor();
+		_x = (int16)(((guiW - w) / 2) * sf);
+		_y = (int16)(((guiH - h) / 2) * sf);
+		_w = (uint16)(w * sf);
+		_h = (uint16)(h * sf);
+
+		Common::String page = text;
+		if (page.empty())
+			page = "# Archipelago\n\nWaiting for the Archipelago client.\n\n"
+			       "Start the client and connect it to your game; this page fills in "
+			       "with tips, your progress and your hints.";
+		new GUI::RichTextWidget(this, pad, pad, w - 2 * pad, h - 3 * pad - buttonH, true,
+		                        Common::U32String(page, Common::kUtf8));
+
+		const int by = h - pad - buttonH;
+		new GUI::ButtonWidget(this, w - pad - buttonW, by, buttonW, buttonH, true,
+		                      Common::U32String("Close"), Common::U32String(), kCloseCmd, Common::ASCII_RETURN);
+		if (withGameHelp)
+			new GUI::ButtonWidget(this, pad, by, buttonW, buttonH, true,
+			                      Common::U32String("Game Help"), Common::U32String(), kGameHelpCmd);
+	}
+
+	void handleCommand(GUI::CommandSender *sender, uint32 cmd, uint32 data) override {
+		if (cmd == kCloseCmd) {
+			setResult(0);
+			close();
+		} else if (cmd == kGameHelpCmd) {
+			setResult(Bridge::kHelpResultGameHelp);
+			close();
+		} else {
+			GUI::Dialog::handleCommand(sender, cmd, data);
+		}
+	}
+};
+
+} // End of anonymous namespace
+
+GUI::Dialog *Bridge::createHelpDialog(bool withGameHelp) {
+	return new HelpDialog(_helpText, withGameHelp);
 }
 
 } // End of namespace APBridge
