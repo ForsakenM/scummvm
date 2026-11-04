@@ -124,7 +124,7 @@ home room into the inventory unless it is already there), `take [obj]`,
 `runScript [n, args...]`, `startObject [obj, verb, args...]` (runs one of an
 object's verb scripts), `goto [room, obj, x, y]` (moves ego to another room as `loadRoomWithEgo` does:
 placed at object `obj`'s walk-to spot and walking to `x, y`; with `obj` 0 the room
-loads as `loadRoom` does and ego is put at `x, y`), `room`, `stopSounds` (all music and effects), `invSlots` (inventory
+loads as `loadRoom` does and ego is put at `x, y`), `room`, `stopSounds` (all music and effects), `talk [text] [actor]` (the actor, default ego, says the text over their head in the game's font, talk color and animation; 0 means busy: someone is talking, a cutscene runs or the player has no control), `invSlots` (inventory
 entries in use).
 The tick runs at the top of `scummLoop`.
 
