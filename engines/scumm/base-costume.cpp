@@ -24,6 +24,7 @@
 
 #include "common/textconsole.h"
 #include "scumm/base-costume.h"
+#include "common/system.h"
 #include "scumm/util.h"
 
 namespace Scumm {
@@ -289,25 +290,41 @@ byte BaseCostumeRenderer::paintCelByleRLECommon(
 }
 #endif
 
-bool BaseCostumeRenderer::apPatternHit(int x, int y) const {
+int BaseCostumeRenderer::apPatternAt(int x, int y) const {
 	// Measured from the actor's position and undone for scaling, so the pattern
 	// stays on the body as the actor walks and shrinks into the distance
 	int scaleX = _scaleX ? _scaleX : 255, scaleY = _scaleY ? _scaleY : 255;
 	int rx = (x - _actorX) * 255 / scaleX + 1024;
 	int ry = (y - _actorY) * 255 / scaleY + 1024;
 	int size = MAX<int>(_apPatternSize, 1);
+	bool hit;
 	switch (_apPatternKind) {
 	case 1: // horizontal stripes
-		return (ry / size) & 1;
+		hit = (ry / size) & 1;
+		break;
 	case 2: // vertical stripes
-		return (rx / size) & 1;
+		hit = (rx / size) & 1;
+		break;
 	case 3: // diagonal stripes
-		return ((rx + ry) / size) & 1;
+		hit = ((rx + ry) / size) & 1;
+		break;
 	case 4: // checks
-		return ((rx / size) + (ry / size)) & 1;
-	default:
-		return false;
+		hit = ((rx / size) + (ry / size)) & 1;
+		break;
+	case 5: { // polka dots: size-pixel dots on a (2 * size + 1) grid, every other row shifted
+		int cell = size * 2 + 1;
+		int sx = rx + (((ry / cell) & 1) ? cell / 2 : 0);
+		hit = (sx % cell) < size && (ry % cell) < size;
+		break;
 	}
+	case 6: // rainbow: hue bands down the body
+		return (ry / size) % 6;
+	case 7: // disco: diagonal hue bands that move
+		return ((rx + ry) / size + (int)(g_system->getMillis() / 120)) % 6;
+	default:
+		hit = false;
+	}
+	return hit ? 0 : -1;
 }
 
 void BaseCostumeRenderer::byleRLEDecode(ByleRLEData &compData, int16 actorHitX, int16 actorHitY, bool *actorHitResult, const uint8 *xmap) {
@@ -369,8 +386,11 @@ void BaseCostumeRenderer::byleRLEDecode(ByleRLEData &compData, int16 actorHitX, 
 								pcolor = _palette[color];
 								if (pcolor == 13 && _shadowTable)
 									pcolor = _shadowTable[*dst];
-								else if (_apAltActive && _apAlt[color] != 0xFFFF && apPatternHit(compData.x, y))
-									pcolor = _apAlt[color];
+								else if (_apAltActive && _apAlt[color] != 0xFFFF) {
+									int p = apPatternAt(compData.x, y);
+									if (p >= 0)
+										pcolor = (_apPatternKind >= 6) ? _apBands[color & 31][p] : _apAlt[color];
+								}
 							}
 						} else {
 							pcolor = _palette[color];

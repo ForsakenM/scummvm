@@ -59,6 +59,15 @@ void ScummBridgeAdapter::getContext(Common::HashMap<Common::String, int32> &ctx)
 void ScummBridgeAdapter::tick() {
 	if (APBridge::Bridge *b = bridge())
 		b->tick();
+	// A disco pattern moves, so its actors are redrawn every frame
+	int ego = (_vm->VAR_EGO != 0xFF) ? _vm->VAR(_vm->VAR_EGO) : 0;
+	for (uint i = 0; i < _patterns.size(); i++) {
+		if (_patterns[i].kind != 7)
+			continue;
+		int n = _patterns[i].actor ? _patterns[i].actor : ego;
+		if (n > 0 && n < _vm->_numActors && _vm->_actors[n]->isInCurrentRoom())
+			_vm->_actors[n]->_needRedraw = true;
+	}
 }
 
 bool ScummBridgeAdapter::onPutOwner(int obj, int owner) {
@@ -198,6 +207,16 @@ int ScummBridgeAdapter::recolor(int actor, int color) {
 int ScummBridgeAdapter::recolorAlt(int actor, int color) {
 	const ColorOverride *c = findColor(actor, color);
 	return (c && c->r2 >= 0) ? _vm->remapPaletteColor(c->r2, c->g2, c->b2, -1) : -1;
+}
+
+int ScummBridgeAdapter::rainbow(int actor, int color, int band) {
+	static const byte hues[6][3] = {
+		{ 230, 40, 40 }, { 240, 140, 20 }, { 240, 220, 40 }, { 40, 180, 60 }, { 40, 90, 220 }, { 150, 50, 190 }
+	};
+	const ColorOverride *c = findColor(actor, color);
+	int bright = (c && c->r2 >= 0) ? c->r2 : 255;
+	const byte *h = hues[CLIP(band, 0, 5)];
+	return _vm->remapPaletteColor(h[0] * bright / 255, h[1] * bright / 255, h[2] * bright / 255, -1);
 }
 
 bool ScummBridgeAdapter::pattern(int actor, byte &kind, byte &size) {

@@ -829,8 +829,13 @@ void ClassicCostumeRenderer::setPalette(uint16 *palette) {
 				if (ap) {
 					if (_apAltActive) {
 						int alt = ap->recolorAlt(_actorID, color);
-						if (alt >= 0)
+						if (alt >= 0) {
 							_apAlt[i] = alt;
+							if (_apPatternKind >= 6 && i < 32) {
+								for (int band = 0; band < 6; band++)
+									_apBands[i][band] = ap->rainbow(_actorID, color, band);
+							}
+						}
 					}
 					color = ap->recolor(_actorID, color);
 				}
