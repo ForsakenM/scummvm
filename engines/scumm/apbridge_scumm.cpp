@@ -221,6 +221,38 @@ bool ScummBridgeAdapter::performAction(const Common::String &op, const APBridge:
 		result = _vm->_currentRoom;
 		return true;
 	}
+	if (op == "talk") {
+		// An actor (args[0], 0 or none = ego) says keys[0] over their head, in the game's
+		// font and their talk color, with the talk animation, as printEgo does. Returns 0
+		// without speaking while someone is talking, a cutscene runs, the player has no
+		// control or the actor is elsewhere, so the client can try again later.
+		if (keys.empty() || keys[0].empty()) {
+			error = "talk needs the text as its key";
+			return false;
+		}
+		int actor = (!args.empty() && args[0] > 0) ? args[0] : ego;
+		Actor *a = actor ? _vm->derefActorSafe(actor, "apbridge talk") : nullptr;
+		if (_vm->_haveMsg || _vm->vm.cutSceneStackPointer > 0 || _vm->_userPut <= 0 || !a || !a->isInCurrentRoom()) {
+			result = 0;
+			return true;
+		}
+		// Printable ASCII only (game charsets have nothing else); a newline starts a new line
+		Common::String msg;
+		for (uint i = 0; i < keys[0].size() && msg.size() < 240; i++) {
+			byte c = (byte)keys[0][i];
+			if (c == '\n') {
+				msg += '\xFF';
+				msg += '\x01';
+			} else if (c >= 0x20 && c < 0x7F) {
+				msg += (char)c;
+			}
+		}
+		_vm->_string[0].loadDefault();
+		_vm->_actorToPrintStrFor = actor;
+		_vm->printString(0, (const byte *)msg.c_str());
+		result = 1;
+		return true;
+	}
 	if (op == "invSlots") {
 		// Raw inventory entries in use, whatever their owners (the cap is _numInventory)
 		result = 0;
