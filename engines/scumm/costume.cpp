@@ -23,6 +23,7 @@
 #include "scumm/scumm.h"
 #include "scumm/actor.h"
 #include "scumm/costume.h"
+#include "scumm/apbridge_scumm.h"
 #include "scumm/sound.h"
 #include "scumm/util.h"
 
@@ -819,6 +820,9 @@ void ClassicCostumeRenderer::setPalette(uint16 *palette) {
 				color = palette[i];
 				if (color == 255)
 					color = _loaded._palette[i];
+				// Archipelago bridge: a client may recolor this actor's costumes
+				if (_vm->apBridge())
+					color = _vm->apBridge()->recolor(_actorID, color);
 				_palette[i] = color;
 			}
 		} else {
