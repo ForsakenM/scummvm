@@ -931,6 +931,9 @@ protected:
 	int _numVariables = 0;
 	int _numBitVariables = 0;
 	ScummBridgeAdapter *_apBridge = nullptr; ///< Archipelago bridge adapter, or nullptr
+public:
+	ScummBridgeAdapter *apBridge() const { return _apBridge; }
+protected:
 	int _numLocalObjects = 0;
 	int _numGlobalObjects = 0;
 	int _numArray = 0;
