@@ -21,6 +21,7 @@
 
 #include "engines/engine.h"
 #include "engines/dialogs.h"
+#include "engines/apbridge.h"
 #include "engines/util.h"
 #include "engines/metaengine.h"
 
@@ -815,6 +816,15 @@ void Engine::drawHotspots() {
 	}
 	_hotspotRenderer->renderOverlay(*_system, (Graphics::MarkerShape)_hotspotMarker, _hotspotShowText, _hotspotForceRedraw);
 	_hotspotForceRedraw = false;
+}
+
+void Engine::openArchipelagoHelpDialog() {
+	APBridge::Bridge *bridge = APBridge::Bridge::instance();
+	if (!bridge)
+		return;
+	GUI::Dialog *dialog = bridge->createHelpDialog(false);
+	runDialog(*dialog);
+	delete dialog;
 }
 
 void Engine::openMainMenuDialog() {

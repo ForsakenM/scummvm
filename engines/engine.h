@@ -659,6 +659,12 @@ public:
 	void openMainMenuDialog();
 
 	/**
+	 * Open the Archipelago help page when the game uses the Archipelago bridge
+	 * (see engines/apbridge.h); does nothing otherwise.
+	 */
+	void openArchipelagoHelpDialog();
+
+	/**
 	 * Display a warning to the user that the game is not fully supported.
 	 *
 	 * @param msg  A message that will be presented to user. If empty, then

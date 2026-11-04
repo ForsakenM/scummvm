@@ -36,6 +36,9 @@
 #include "gui/debugger.h"
 #include "gui/message.h"
 
+// Custom backend action of the "Archipelago help" key ('APHP').
+static const Common::CustomEventType kArchipelagoHelpAction = 0x41504850;
+
 DefaultEventManager::DefaultEventManager(Common::EventSource *boss) :
 	_buttonState(0),
 	_modifierState(0),
@@ -173,6 +176,11 @@ bool DefaultEventManager::pollEvent(Common::Event &event) {
 			event.type = Common::EVENT_QUIT;
 		else if (_shouldReturnToLauncher)
 			event.type = Common::EVENT_RETURN_TO_LAUNCHER;
+		break;
+
+	case Common::EVENT_CUSTOM_BACKEND_ACTION_START:
+		if (event.customType == kArchipelagoHelpAction && g_engine && !g_engine->isPaused())
+			g_engine->openArchipelagoHelpDialog();
 		break;
 
 	case Common::EVENT_VIRTUAL_KEYBOARD:
@@ -369,6 +377,12 @@ Common::Keymap *DefaultEventManager::getGlobalKeymap() {
 		act->setEvent(EVENT_VIRTUAL_KEYBOARD);
 		globalKeymap->addAction(act);
 	}
+
+	// Opens the Archipelago help page in games that use the Archipelago bridge.
+	act = new Action("APHELP", _("Archipelago help"));
+	act->addDefaultInputMapping("C+F6");
+	act->setCustomBackendActionEvent(kArchipelagoHelpAction);
+	globalKeymap->addAction(act);
 
 	act = new Action("MUTE", _("Toggle mute"));
 	act->addDefaultInputMapping("C+u");
