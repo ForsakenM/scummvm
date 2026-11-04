@@ -67,7 +67,11 @@ class Actor;
  *                         0 or left out = every costume), the parts drawn in palette color
  *                         `color` use the room palette's closest match to r, g, b instead.
  *                         r = -1 removes it.
- *   clearColors           removes every actorColor
+ *                         Three more values [r2, g2, b2] give a pattern's second color.
+ *   actorPattern [actor, kind, size]   draws actorColor's second colors in a pattern over the
+ *                         actor (0 = ego): 1 horizontal stripes, 2 vertical, 3 diagonal,
+ *                         4 checks, `size` pixels wide; kind 0 removes it.
+ *   clearColors           removes every actorColor and actorPattern
  *   invSlots              inventory entries in use (SCUMM caps them, 80 in v5)
  */
 class ScummBridgeAdapter : public APBridge::Adapter {
@@ -92,14 +96,25 @@ public:
 	bool onRunScript(int script);
 	/** The palette color a costume of @p actor draws in place of @p color. */
 	int recolor(int actor, int color);
+	/** The pattern's second color for @p color, or -1. */
+	int recolorAlt(int actor, int color);
+	/** The actor's pattern; false when it has none. */
+	bool pattern(int actor, byte &kind, byte &size);
 
 private:
 	struct ColorOverride {
 		int actor, index, costume;
 		byte r, g, b;
+		int r2, g2, b2;   ///< a pattern's second color, r2 < 0 for none
 	};
 	Common::Array<ColorOverride> _colors;
 	void redrawActors();
+	const ColorOverride *findColor(int actor, int color);
+	struct Pattern {
+		int actor;
+		byte kind, size;
+	};
+	Common::Array<Pattern> _patterns;
 
 	ScummEngine *_vm;
 	int _vetoedOwnerObj = 0;  ///< last object whose owner change was vetoed

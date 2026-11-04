@@ -816,13 +816,24 @@ void ClassicCostumeRenderer::setPalette(uint16 *palette) {
 		_palette[_loaded._palette[0]] = _palette[0];
 	} else {
 		if (_vm->getCurrentLights() & LIGHTMODE_actor_use_colors) {
+			_apAltActive = false;
+			ScummBridgeAdapter *ap = _vm->apBridge();
+			if (ap)
+				_apAltActive = ap->pattern(_actorID, _apPatternKind, _apPatternSize);
 			for (i = 0; i < _loaded._numColors; i++) {
 				color = palette[i];
 				if (color == 255)
 					color = _loaded._palette[i];
-				// Archipelago bridge: a client may recolor this actor's costumes
-				if (_vm->apBridge())
-					color = _vm->apBridge()->recolor(_actorID, color);
+				// Archipelago bridge: a client may recolor this actor's costumes, or pattern them
+				_apAlt[i] = 0xFFFF;
+				if (ap) {
+					if (_apAltActive) {
+						int alt = ap->recolorAlt(_actorID, color);
+						if (alt >= 0)
+							_apAlt[i] = alt;
+					}
+					color = ap->recolor(_actorID, color);
+				}
 				_palette[i] = color;
 			}
 		} else {

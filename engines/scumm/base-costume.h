@@ -110,6 +110,13 @@ protected:
 	// actor _palette
 	uint16 _palette[256] = {};
 
+	// Archipelago bridge: a pattern over recolored parts. Costume colors with an
+	// alternative (_apAlt[c] != 0xFFFF) draw it where the pattern says so.
+	uint16 _apAlt[256] = {};
+	bool _apAltActive = false;
+	byte _apPatternKind = 0, _apPatternSize = 2;
+	bool apPatternHit(int x, int y) const;
+
 public:
 	struct ByleRLEData {
 		// Parameters for the original ("V1") costume codec.

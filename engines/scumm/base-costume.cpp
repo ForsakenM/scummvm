@@ -289,6 +289,27 @@ byte BaseCostumeRenderer::paintCelByleRLECommon(
 }
 #endif
 
+bool BaseCostumeRenderer::apPatternHit(int x, int y) const {
+	// Measured from the actor's position and undone for scaling, so the pattern
+	// stays on the body as the actor walks and shrinks into the distance
+	int scaleX = _scaleX ? _scaleX : 255, scaleY = _scaleY ? _scaleY : 255;
+	int rx = (x - _actorX) * 255 / scaleX + 1024;
+	int ry = (y - _actorY) * 255 / scaleY + 1024;
+	int size = MAX<int>(_apPatternSize, 1);
+	switch (_apPatternKind) {
+	case 1: // horizontal stripes
+		return (ry / size) & 1;
+	case 2: // vertical stripes
+		return (rx / size) & 1;
+	case 3: // diagonal stripes
+		return ((rx + ry) / size) & 1;
+	case 4: // checks
+		return ((rx / size) + (ry / size)) & 1;
+	default:
+		return false;
+	}
+}
+
 void BaseCostumeRenderer::byleRLEDecode(ByleRLEData &compData, int16 actorHitX, int16 actorHitY, bool *actorHitResult, const uint8 *xmap) {
 #ifdef SCUMM_OPTIMISED_CODE
 	if ((_vm->_bytesPerPixel == 1) &&
@@ -348,6 +369,8 @@ void BaseCostumeRenderer::byleRLEDecode(ByleRLEData &compData, int16 actorHitX, 
 								pcolor = _palette[color];
 								if (pcolor == 13 && _shadowTable)
 									pcolor = _shadowTable[*dst];
+								else if (_apAltActive && _apAlt[color] != 0xFFFF && apPatternHit(compData.x, y))
+									pcolor = _apAlt[color];
 							}
 						} else {
 							pcolor = _palette[color];
