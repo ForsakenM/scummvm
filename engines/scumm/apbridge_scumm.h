@@ -63,9 +63,10 @@ class Actor;
  *   goto [room, obj, x, y]   move ego to a room as loadRoomWithEgo does (obj 0: put at x, y)
  *   stopSounds            stops all music and sound effects
  *   talk                  [text] [actor]: the actor (default ego) says text over their head
- *   actorColor [actor, costume, slot, r, g, b]   recolors one costume color of an actor (0 = ego)
- *                         while it wears that costume: drawn with the room palette's closest
- *                         match to r, g, b, re-matched in every room. r = -1 removes it.
+ *   actorColor [actor, color, r, g, b, costume]   in the actor's costumes (0 = ego; costume
+ *                         0 or left out = every costume), the parts drawn in palette color
+ *                         `color` use the room palette's closest match to r, g, b instead.
+ *                         r = -1 removes it.
  *   clearColors           removes every actorColor
  *   invSlots              inventory entries in use (SCUMM caps them, 80 in v5)
  */
@@ -89,15 +90,16 @@ public:
 	bool onWriteVar(unsigned int var, int value);
 	void onRoom(int room);
 	bool onRunScript(int script);
-	void tintActor(Actor *a);
+	/** The palette color a costume of @p actor draws in place of @p color. */
+	int recolor(int actor, int color);
 
 private:
 	struct ColorOverride {
-		int actor, costume, slot;
+		int actor, index, costume;
 		byte r, g, b;
 	};
 	Common::Array<ColorOverride> _colors;
-	void untint(const ColorOverride &c);
+	void redrawActors();
 
 	ScummEngine *_vm;
 	int _vetoedOwnerObj = 0;  ///< last object whose owner change was vetoed
