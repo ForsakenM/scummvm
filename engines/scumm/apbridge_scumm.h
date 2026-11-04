@@ -70,7 +70,9 @@ class Actor;
  *                         Three more values [r2, g2, b2] give a pattern's second color.
  *   actorPattern [actor, kind, size]   draws actorColor's second colors in a pattern over the
  *                         actor (0 = ego): 1 horizontal stripes, 2 vertical, 3 diagonal,
- *                         4 checks, `size` pixels wide; kind 0 removes it.
+ *                         4 checks, 5 polka dots, 6 rainbow, 7 disco (moving rainbow),
+ *                         `size` pixels wide; kind 0 removes it. For 6 and 7 the second
+ *                         color's red value sets each color's brightness (255 = full).
  *   clearColors           removes every actorColor and actorPattern
  *   invSlots              inventory entries in use (SCUMM caps them, 80 in v5)
  */
@@ -100,6 +102,8 @@ public:
 	int recolorAlt(int actor, int color);
 	/** The actor's pattern; false when it has none. */
 	bool pattern(int actor, byte &kind, byte &size);
+	/** Rainbow and disco: hue @p band, as bright as the color's second color's red value says. */
+	int rainbow(int actor, int color, int band);
 
 private:
 	struct ColorOverride {

@@ -113,9 +113,11 @@ protected:
 	// Archipelago bridge: a pattern over recolored parts. Costume colors with an
 	// alternative (_apAlt[c] != 0xFFFF) draw it where the pattern says so.
 	uint16 _apAlt[256] = {};
+	uint16 _apBands[32][6] = {};   ///< rainbow and disco: the six hues for each costume color
 	bool _apAltActive = false;
 	byte _apPatternKind = 0, _apPatternSize = 2;
-	bool apPatternHit(int x, int y) const;
+	/** -1: keep the color; else the second color (two-color patterns) or a hue band (0-5). */
+	int apPatternAt(int x, int y) const;
 
 public:
 	struct ByleRLEData {
