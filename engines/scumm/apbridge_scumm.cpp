@@ -21,6 +21,7 @@
 
 #include "scumm/apbridge_scumm.h"
 #include "scumm/actor.h"
+#include "scumm/sound.h"
 #include "scumm/scumm.h"
 #include "scumm/object.h"
 #include "scumm/script.h"
@@ -178,6 +179,12 @@ bool ScummBridgeAdapter::performAction(const Common::String &op, const APBridge:
                                        int32 &result, Common::String &error) {
 	int ego = (_vm->VAR_EGO != 0xFF) ? _vm->VAR(_vm->VAR_EGO) : 0;
 
+	if (op == "stopSounds") {
+		// Silence music and effects, as a room change made by the game's own scripts would
+		_vm->_sound->stopAllSounds();
+		result = 1;
+		return true;
+	}
 	if (op == "goto") {
 		// Move ego to another room, as loadRoomWithEgo(obj, room, x, y) does: placed at
 		// object obj's walk-to spot and walking to (x, y), or with obj 0 put at (x, y).
