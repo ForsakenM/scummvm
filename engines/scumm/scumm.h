@@ -1271,6 +1271,7 @@ protected:
 	void setObjectState(int obj, int state, int x, int y);
 	int getOwner(int obj) const;
 	void putOwner(int obj, int owner);
+	void putOwnerUnchecked(int obj, int owner);	// setOwnerOf(): the bridge was already asked
 	void setOwnerOf(int obj, int owner);
 	void clearOwnerOf(int obj);
 	int getObjectRoom(int obj) const;

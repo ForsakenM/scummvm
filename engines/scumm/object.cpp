@@ -130,6 +130,12 @@ void ScummEngine::setOwnerOf(int obj, int owner) {
 	// through -- but what did they exactly do, in this case?
 	assert(obj > 0);
 
+	// Archipelago bridge: ask before anything changes. clearOwnerOf() below
+	// would already drop the object from the inventory, so a vetoed removal
+	// would leave the owner unchanged but the inventory entry gone.
+	if (_apBridge && _apBridge->onPutOwner(obj, owner))
+		return;
+
 	if (owner == 0) {
 		clearOwnerOf(obj);
 
@@ -160,7 +166,7 @@ void ScummEngine::setOwnerOf(int obj, int owner) {
 		if (ss != nullptr && ss->where == WIO_INVENTORY) {
 			if (ss->number < _numInventory && _inventory[ss->number] == obj) {
 				error("Odd setOwnerOf case #1: Please report to Fingolfin where you encountered this");
-				putOwner(obj, 0);
+				putOwnerUnchecked(obj, 0);
 				runInventoryScript(arg);
 				stopObjectCode();
 				return;
@@ -170,7 +176,7 @@ void ScummEngine::setOwnerOf(int obj, int owner) {
 		}
 	}
 
-	putOwner(obj, owner);
+	putOwnerUnchecked(obj, owner);
 	runInventoryScript(arg);
 }
 
@@ -305,6 +311,12 @@ void ScummEngine::putOwner(int obj, int owner) {
 	// Archipelago bridge: every pickup goes through here; the client may veto it
 	if (_apBridge && _apBridge->onPutOwner(obj, owner))
 		return;
+	_objectOwnerTable[obj] = owner;
+}
+
+void ScummEngine::putOwnerUnchecked(int obj, int owner) {
+	assertRange(0, obj, _numGlobalObjects - 1, "object");
+	assertRange(0, owner, 0xFF, "owner");
 	_objectOwnerTable[obj] = owner;
 }
 
