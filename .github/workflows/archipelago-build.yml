@@ -1,0 +1,130 @@
+# Builds ScummVM with the Archipelago bridge for players.
+#
+# - Every push to this branch makes test builds (download them from the run's "Artifacts").
+# - Pushing a tag that starts with "ap-" (e.g. ap-0.1.0) also publishes a GitHub Release with the zips.
+#   A tag containing "test" (e.g. ap-0.4.0-test1) publishes it as a pre-release.
+# - "Run workflow" on the Actions tab does a test build of any branch.
+#
+# Only the SCUMM and SCI engines are built (Monkey Island 2, King's Quest VI), which keeps builds short.
+name: Archipelago build
+
+on:
+  push:
+    branches: [archipelago-release, archipelago-spots]
+    tags: ['ap-*']
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+env:
+  ENGINES: scumm,sci
+
+jobs:
+  windows:
+    name: Windows x64
+    runs-on: windows-2025-vs2026
+    env:
+      CONFIGURATION: Release
+      PLATFORM: x64
+      VCPKG_DEFAULT_TRIPLET: x64-windows
+      VCPKG_INSTALLED_DIR: ${{ github.workspace }}/vcpkg_installed
+      VCPKG_BINARY_SOURCES: clear;files,${{ github.workspace }}/vcpkg_cache,readwrite
+      VCPKG_OVERLAY_PORTS: ${{ github.workspace }}/.github/vcpkg-ports
+      GIT_VCPKG_COMMIT: 9e593bb18ea69cc5095e012465dcd675a822ed0d
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Install vcpkg
+        uses: lukka/run-vcpkg@v11
+        id: runvcpkg
+        with:
+          vcpkgGitCommitId: ${{ env.GIT_VCPKG_COMMIT }}
+      - name: Integrate vcpkg
+        run: ${{ steps.runvcpkg.outputs.RUNVCPKG_VCPKG_ROOT_OUT }}/vcpkg integrate install
+      - name: Restore vcpkg cache
+        uses: actions/cache/restore@v4
+        with:
+          path: ${{ github.workspace }}/vcpkg_cache
+          key: vcpkg-${{ env.GIT_VCPKG_COMMIT }}-x64-windows-${{ hashFiles('vcpkg.json') }}
+          restore-keys: vcpkg-${{ env.GIT_VCPKG_COMMIT }}-x64-windows-
+      - name: Build create_project
+        run: |
+          cd devtools/create_project/cmake
+          cmake .
+          cmake --build . -j 2
+      - name: Call create_project
+        run: |
+          mkdir build-scummvm
+          cd build-scummvm
+          ../devtools/create_project/cmake/Debug/create_project.exe .. --msvc --vcpkg --disable-all-engines --enable-engine=${{ env.ENGINES }}
+      - name: Add msbuild to PATH
+        uses: microsoft/setup-msbuild@v2
+      - name: Install vcpkg packages
+        run: vcpkg install
+      - name: Save vcpkg cache
+        uses: actions/cache/save@v4
+        with:
+          path: ${{ github.workspace }}/vcpkg_cache
+          key: vcpkg-${{ env.GIT_VCPKG_COMMIT }}-x64-windows-${{ hashFiles('vcpkg.json') }}
+      - name: Build scummvm
+        run: |
+          cd build-scummvm
+          msbuild scummvm.sln /m /p:VcpkgEnableManifest=true /p:BuildInParallel=true /p:Configuration=${{ env.CONFIGURATION }} /p:PreferredToolArchitecture=x64 /p:Platform=x64 /v:minimal
+      - name: Package
+        shell: bash
+        run: |
+          mkdir -p dist/scummvm-archipelago
+          cp build-scummvm/Releasex64/scummvm.exe dist/scummvm-archipelago/
+          cp vcpkg_installed/x64-windows/bin/*.dll dist/scummvm-archipelago/
+          cp gui/themes/*.zip dist/scummvm-archipelago/
+          cp COPYING doc/archipelago-bridge.md dist/scummvm-archipelago/
+          cd dist && 7z a ../scummvm-archipelago-windows-x64.zip scummvm-archipelago
+      - name: Upload build
+        uses: actions/upload-artifact@v4
+        with:
+          name: scummvm-archipelago-windows-x64
+          path: scummvm-archipelago-windows-x64.zip
+      - name: Publish release
+        if: startsWith(github.ref, 'refs/tags/ap-')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: scummvm-archipelago-windows-x64.zip
+          prerelease: ${{ contains(github.ref_name, 'test') }}
+
+  linux:
+    name: Linux x64
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Install packages
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libsdl2-dev libsdl2-net-dev libcurl4-openssl-dev libfreetype6-dev libfribidi-dev \
+            libflac-dev libmad0-dev libogg-dev libvorbis-dev libtheora-dev libpng-dev libjpeg-turbo8-dev \
+            libfluidsynth-dev liba52-dev libmpeg2-4-dev zlib1g-dev
+      - name: Configure
+        run: ./configure --enable-release --disable-all-engines --enable-engine=${{ env.ENGINES }}
+      - name: Build scummvm
+        run: make -j4
+      - name: Package
+        run: |
+          mkdir -p dist/scummvm-archipelago
+          cp scummvm dist/scummvm-archipelago/
+          cp gui/themes/*.zip COPYING doc/archipelago-bridge.md dist/scummvm-archipelago/
+          tar -C dist -czf scummvm-archipelago-linux-x64.tar.gz scummvm-archipelago
+      - name: Upload build
+        uses: actions/upload-artifact@v4
+        with:
+          name: scummvm-archipelago-linux-x64
+          path: scummvm-archipelago-linux-x64.tar.gz
+      - name: Publish release
+        if: startsWith(github.ref, 'refs/tags/ap-')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: scummvm-archipelago-linux-x64.tar.gz
+          prerelease: ${{ contains(github.ref_name, 'test') }}
