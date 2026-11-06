@@ -1515,6 +1515,9 @@ void ScummEngine_v5::o5_ifClassOfIs() {
 			cond = (getState(obj) == 0);
 		} else {
 			b = getClass(obj, cls);
+			// Archipelago bridge: the client may change what scripts are told
+			if (_apBridge)
+				_apBridge->onGetClass(obj, cls & 0x7F, b);
 			if (((cls & 0x80) && !b) || (!(cls & 0x80) && b))
 				cond = false;
 		}

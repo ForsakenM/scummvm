@@ -103,12 +103,9 @@ bool ScummBridgeAdapter::onPutOwner(int obj, int owner) {
 	return veto;
 }
 
-bool ScummBridgeAdapter::onGetOwner(int obj, int &owner) {
-	APBridge::Bridge *b = bridge();
-	if (!b || !b->wants("getowner"))
-		return false;
-	const char *by = "global";
-	int number = 0;
+void ScummBridgeAdapter::scriptContext(const char *&by, int &number) const {
+	by = "global";
+	number = 0;
 	if (_vm->_currentScript != 0xFF) {
 		const ScriptSlot &ss = _vm->vm.slot[_vm->_currentScript];
 		number = ss.number;
@@ -126,6 +123,15 @@ bool ScummBridgeAdapter::onGetOwner(int obj, int &owner) {
 			by = "object";
 		}
 	}
+}
+
+bool ScummBridgeAdapter::onGetOwner(int obj, int &owner) {
+	APBridge::Bridge *b = bridge();
+	if (!b || !b->wants("getowner"))
+		return false;
+	const char *by;
+	int number;
+	scriptContext(by, number);
 	APBridge::Keys keys;
 	keys.push_back(num(obj));
 	keys.push_back(by);
@@ -135,6 +141,26 @@ bool ScummBridgeAdapter::onGetOwner(int obj, int &owner) {
 	APBridge::Verdict v = b->notify("getowner", keys, args);
 	if (v.veto)
 		owner = v.value;
+	return v.veto;
+}
+
+bool ScummBridgeAdapter::onGetClass(int obj, int cls, int &has) {
+	APBridge::Bridge *b = bridge();
+	if (!b || !b->wants("getclass"))
+		return false;
+	const char *by;
+	int number;
+	scriptContext(by, number);
+	APBridge::Keys keys;
+	keys.push_back(num(obj));
+	keys.push_back(num(cls));
+	keys.push_back(by);
+	keys.push_back(num(number));
+	APBridge::Args args;
+	args.push_back(has ? 1 : 0);
+	APBridge::Verdict v = b->notify("getclass", keys, args);
+	if (v.veto)
+		has = v.value;
 	return v.veto;
 }
 
@@ -257,6 +283,15 @@ bool ScummBridgeAdapter::performAction(const Common::String &op, const APBridge:
                                        int32 &result, Common::String &error) {
 	int ego = (_vm->VAR_EGO != 0xFF) ? _vm->VAR(_vm->VAR_EGO) : 0;
 
+	if (op == "spots") {
+		// Replace the list of spots (objects still to be found at their home spot)
+		_spots.clear();
+		for (uint i = 0; i < args.size(); i++)
+			if (args[i] > 0)
+				_spots[args[i]] = true;
+		result = _spots.size();
+		return true;
+	}
 	if (op == "stopSounds") {
 		// Silence music and effects, as a room change made by the game's own scripts would
 		_vm->_sound->stopAllSounds();

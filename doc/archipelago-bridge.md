@@ -128,11 +128,20 @@ Events:
 | `room`   | `[room]` | |
 | `script` | `[number]` | (vetoable) |
 | `getowner` | `[object, by, number]` | `[owner]` (vetoable; v5). A script asked who owns an object. `by` is `object` (number = the object whose verb script is running), `global`, `local`, `entry` or `exit` (number = room). |
+| `getclass` | `[object, class, by, number]` | `[has]` (vetoable; v5). A script tested whether an object has a class (bit 7 stripped); `by` and `number` as for `getowner`. |
 
 Context: `room`, `ego`, `mx`/`my` (the mouse in room coordinates, so a client can
 tell where a click landed).
 
-A `getowner` veto replaces the answer the script gets with the rule's `value`.
+A `getowner` or `getclass` veto replaces the answer the script gets with the rule's `value`.
+
+Spots: in a randomizer the item the player receives and the place it is found
+are one game object, with one owner. When the player uses the item up (its
+owner becomes neither ego nor a room), the engine would treat the object as
+gone everywhere, and the place could no longer be picked up. The `spots`
+action lists objects whose place is still to be found: while listed, such an
+object is still present in its home room (scripts reading its owner still get
+the real value). The client sends the list again whenever it changes.
 The real owner does not change, so the inventory, other scripts and other
 rooms still see the truth. This keeps a location checkable after the client
 has already handed over its item: for example, answer `15` (the room) when the
@@ -157,7 +166,7 @@ home room into the inventory unless it is already there), `take [obj]`,
 `runScript [n, args...]`, `startObject [obj, verb, args...]` (runs one of an
 object's verb scripts), `goto [room, obj, x, y]` (moves ego to another room as `loadRoomWithEgo` does:
 placed at object `obj`'s walk-to spot and walking to `x, y`; with `obj` 0 the room
-loads as `loadRoom` does and ego is put at `x, y`), `room`, `stopSounds` (all music and effects), `talk [text] [actor]` (the actor, default ego, says the text over their head in the game's font, talk color and animation; 0 means busy: someone is talking, a cutscene runs or the player has no control), `actorColor [actor, color, r, g, b, costume]` (in the actor's costumes, 0 = ego, or only in `costume` when given, the parts drawn in palette color `color` use the room palette's closest match to r, g, b; r = -1 removes it), `clearColors`, `invSlots` (inventory
+loads as `loadRoom` does and ego is put at `x, y`), `room`, `stopSounds` (all music and effects), `talk [text] [actor]` (the actor, default ego, says the text over their head in the game's font, talk color and animation; 0 means busy: someone is talking, a cutscene runs or the player has no control), `actorColor [actor, color, r, g, b, costume]` (in the actor's costumes, 0 = ego, or only in `costume` when given, the parts drawn in palette color `color` use the room palette's closest match to r, g, b; r = -1 removes it), `clearColors`, `spots [object...]` (replace the list of spots, see above), `invSlots` (inventory
 entries in use).
 The tick runs at the top of `scummLoop`.
 
