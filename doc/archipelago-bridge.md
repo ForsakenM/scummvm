@@ -122,7 +122,7 @@ Events:
 
 | kind     | keys | args |
 |----------|------|------|
-| `owner`  | `[object]` | `[newOwner, oldOwner, toEgo]` (vetoable). Every pickup in every SCUMM version goes through `putOwner`. |
+| `owner`  | `[object]` | `[newOwner, oldOwner, toEgo]` (vetoable). Every pickup in every SCUMM version goes through `putOwner`. A script's `setOwnerOf` asks before it changes anything, so vetoing a removal also keeps the inventory entry. |
 | `var`    | `[index]` | `[new, old]` (vetoable) |
 | `bitvar` | `[index]` | `[new, old]` (vetoable) |
 | `room`   | `[room]` | |
