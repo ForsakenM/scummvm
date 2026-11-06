@@ -933,6 +933,8 @@ protected:
 	ScummBridgeAdapter *_apBridge = nullptr; ///< Archipelago bridge adapter, or nullptr
 public:
 	ScummBridgeAdapter *apBridge() const { return _apBridge; }
+	/** An Archipelago spot kept at home although its item was used up. */
+	bool isApSpot(int obj) const;
 protected:
 	int _numLocalObjects = 0;
 	int _numGlobalObjects = 0;

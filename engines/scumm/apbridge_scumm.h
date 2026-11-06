@@ -23,6 +23,7 @@
 #define SCUMM_APBRIDGE_SCUMM_H
 
 #include "common/array.h"
+#include "common/hashmap.h"
 #include "engines/apbridge.h"
 
 namespace Scumm {
@@ -41,6 +42,7 @@ class Actor;
  *   room    keys [room]    args []
  *   script  keys [number]  args []                                 (vetoable)
  *   getowner keys [object, by, number]  args [owner]               (vetoable)
+ *   getclass keys [object, class, by, number]  args [has]     (vetoable)
  *           a script asked who owns an object (getObjectOwner). "by" names the
  *           asking script: object (number = object id), global, local, entry
  *           or exit (number = room). A veto replaces the answer with the
@@ -91,6 +93,15 @@ public:
 	// Hooks; return true to veto.
 	bool onPutOwner(int obj, int owner);
 	bool onGetOwner(int obj, int &owner);
+	/** A script tests whether @p obj has class @p cls (bit 7 stripped); @p has may be answered. */
+	bool onGetClass(int obj, int cls, int &has);
+	/**
+	 * Spots: objects the client lists as still to be found at their home spot.
+	 * Using such an object up (its owner leaving ego for anything but a room)
+	 * would otherwise remove its spot too, since the item and the spot are one
+	 * object; the engine keeps the spot while the object is listed.
+	 */
+	bool isSpot(int obj) const { return _spots.contains(obj); }
 	void pickupBegin() { _vetoedOwnerObj = 0; }
 	void pickupEnd(int obj, int slot);
 	bool inInventory(int obj) const;
@@ -123,6 +134,9 @@ private:
 
 	ScummEngine *_vm;
 	int _vetoedOwnerObj = 0;  ///< last object whose owner change was vetoed
+	Common::HashMap<int, bool> _spots;
+	/** Which script is running, as getowner/getclass report it: by = object/global/local/entry/exit. */
+	void scriptContext(const char *&by, int &number) const;
 };
 
 } // End of namespace Scumm

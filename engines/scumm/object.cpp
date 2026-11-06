@@ -352,6 +352,14 @@ int ScummEngine::getObjectIndex(int object) const {
 	return -1;
 }
 
+bool ScummEngine::isApSpot(int obj) const {
+	// Archipelago bridge: a spot the client still lists stays at home once its
+	// item is used up (owner neither ego nor a room), see ScummBridgeAdapter::isSpot
+	if (!_apBridge || obj < 1 || obj >= _numGlobalObjects || !_apBridge->isSpot(obj))
+		return false;
+	return VAR_EGO == 0xFF || _objectOwnerTable[obj] != _scummVars[VAR_EGO];
+}
+
 int ScummEngine::whereIsObject(int object) const {
 	int i;
 
@@ -363,7 +371,7 @@ int ScummEngine::whereIsObject(int object) const {
 		return WIO_NOT_FOUND;
 
 	if ((_game.version != 0 || OBJECT_V0_TYPE(object) == 0) &&
-		 _objectOwnerTable[object] != OF_OWNER_ROOM)
+		 _objectOwnerTable[object] != OF_OWNER_ROOM && !isApSpot(object))
 	{
 		for (i = 0; i < _numInventory; i++)
 			if (_inventory[i] == object)
@@ -1327,7 +1335,7 @@ uint32 ScummEngine::getOBCDOffs(int object) const {
 	int i;
 
 	if ((_game.version != 0 || OBJECT_V0_TYPE(object) == 0) &&
-		_objectOwnerTable[object] != OF_OWNER_ROOM)
+		_objectOwnerTable[object] != OF_OWNER_ROOM && !isApSpot(object))
 		return 0;
 
 	for (i = (_numLocalObjects-1); i > 0; i--) {
@@ -1345,7 +1353,7 @@ byte *ScummEngine::getOBCDFromObject(int obj, bool v0CheckInventory) {
 	byte *ptr;
 
 	if ((_game.version != 0 || OBJECT_V0_TYPE(obj) == 0) &&
-		_objectOwnerTable[obj] != OF_OWNER_ROOM)
+		_objectOwnerTable[obj] != OF_OWNER_ROOM && !isApSpot(obj))
 	{
 		if (_game.version == 0 && !v0CheckInventory)
 			return nullptr;
