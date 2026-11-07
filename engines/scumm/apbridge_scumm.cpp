@@ -498,6 +498,24 @@ bool ScummBridgeAdapter::performAction(const Common::String &op, const APBridge:
 		result = 1;
 		return true;
 	}
+	if (op == "setClass") {
+		// As a script's setClass(obj, [classes]) does: a class with bit 0x80 is set, without it cleared.
+		// Objects below the actor count are actors, as in the game's own scripts.
+		if (args.size() < 2 || obj < 1 || obj >= _vm->_numGlobalObjects) {
+			error = "setClass needs [object, class...]";
+			return false;
+		}
+		for (uint i = 1; i < args.size(); i++) {
+			int cls = args[i];
+			if ((cls & 0x7F) < 1 || (cls & 0x7F) > 32) {
+				error = "class out of range";
+				return false;
+			}
+			_vm->putClass(obj, cls, (cls & 0x80) != 0);
+		}
+		result = 1;
+		return true;
+	}
 	if (op == "getOwner") {
 		result = _vm->getOwner(obj);
 		return true;
