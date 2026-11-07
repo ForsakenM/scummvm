@@ -50,6 +50,10 @@ OptionsWidget::OptionsWidget(GuiObject *boss, const Common::String &name, const 
 
 	_hint = new GUI::StaticTextWidget(widgetsBoss(), _dialogLayout + ".hint",
 		_("The game connects to the client by itself while it runs."));
+
+	_switchCheckbox = new GUI::CheckboxWidget(widgetsBoss(), _dialogLayout + ".switch",
+		_("Include in game switching (Ctrl+F7)"),
+		_("Ctrl+F7 in any game saves it and switches to another game with this ticked, where you left it. Give each randomized game its own client address."));
 }
 
 void OptionsWidget::defineLayout(GUI::ThemeEval &layouts, const Common::String &layoutName,
@@ -66,6 +70,8 @@ void OptionsWidget::defineLayout(GUI::ThemeEval &layouts, const Common::String &
 
 	layouts.addWidget("hint", "Checkbox"); // a full-width, one-line text row
 
+	layouts.addWidget("switch", "Checkbox");
+
 	layouts.closeLayout().closeDialog();
 }
 
@@ -74,6 +80,7 @@ void OptionsWidget::load() {
 	Common::String address = ConfMan.hasKey("ap_bridge_address", _domain) ? ConfMan.get("ap_bridge_address", _domain) : "";
 	if (address.empty())
 		address = Bridge::kDefaultAddress;
+	_switchCheckbox->setState(ConfMan.hasKey("ap_switch", _domain) && ConfMan.getBool("ap_switch", _domain));
 	_enabledCheckbox->setState(enabled);
 	_addressField->setEditString(Common::U32String(address));
 	updateState();
@@ -84,6 +91,10 @@ bool OptionsWidget::save() {
 	Common::String address = _addressField->getEditString().encode();
 	address.trim();
 	ConfMan.setBool("ap_bridge_enabled", enabled, _domain);
+	if (_switchCheckbox->getState())
+		ConfMan.setBool("ap_switch", true, _domain);
+	else
+		ConfMan.removeKey("ap_switch", _domain);
 	if (address.empty() || address == Bridge::kDefaultAddress)
 		ConfMan.removeKey("ap_bridge_address", _domain);
 	else
@@ -92,11 +103,13 @@ bool OptionsWidget::save() {
 }
 
 bool OptionsWidget::hasKeys() {
-	return ConfMan.hasKey("ap_bridge_enabled", _domain) || ConfMan.hasKey("ap_bridge_address", _domain);
+	return ConfMan.hasKey("ap_bridge_enabled", _domain) || ConfMan.hasKey("ap_bridge_address", _domain) ||
+	       ConfMan.hasKey("ap_switch", _domain);
 }
 
 void OptionsWidget::setEnabled(bool e) {
 	_enabledCheckbox->setEnabled(e);
+	_switchCheckbox->setEnabled(e);
 	updateState();
 }
 

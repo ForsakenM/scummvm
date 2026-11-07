@@ -15,7 +15,9 @@ This is stored per game as `ap_bridge_enabled` / `ap_bridge_address`.
 
 Alternatives for scripts and testing: a raw `ap_bridge=host:port` key, or the
 `SCUMMVM_AP_BRIDGE=host:port` environment variable. Settings are read each
-time a game starts.
+time a game starts. A client that starts ScummVM itself also sets
+`SCUMMVM_AP_TARGET` to the game's target, so the environment address only
+applies to that game and not to one switched to with Ctrl+F7.
 
 The client listens on that port; ScummVM connects out (libcurl socket) when a
 game starts and reconnects every 2 s if the client goes away. Builds without
@@ -86,6 +88,24 @@ refuse with `say` when a game-specific condition forbids it.
 {"cmd":"travel","title":"Travel","options":[{"id":1,"text":"Mêlée Island"},{"id":3,"text":"Monkey Island","enabled":false}]}
 {"type":"travel","id":1,"ctx":{"room":19,"ego":1,"mx":189,"my":118}}
 ```
+
+### Game switching
+
+The global keymap action "Archipelago game switch" (Ctrl+F7 by default) lists
+every other game whose Archipelago tab has **Include in game switching** ticked
+(`ap_switch` in its domain), whatever its engine, and whether or not it uses the
+bridge. Picking one saves the current game to its engine's last save slot
+(`getMaximumSaveSlot()`, 99 for SCUMM and SCI; the autosave slot belongs to the
+engine) as "Archipelago game switch", records that slot as `ap_switch_slot` in
+the game's domain, and returns to the launcher with the other game chained (as
+Day of the Tentacle chains Maniac Mansion). That game starts from its own
+`ap_switch_slot` if it has one, or from the beginning. Switching needs the game
+to be saveable at that moment; otherwise an on-screen message says so.
+
+Each randomized game connects to its own client, so give them different client
+addresses (and ports in the clients). The clients stay connected to the
+multiworld while their game is switched out, keep its items, and hand them over
+when the game is back and its save is loaded.
 
 ## SCI (Sierra SCI0–SCI1.1)
 

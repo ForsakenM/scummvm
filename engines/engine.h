@@ -671,6 +671,12 @@ public:
 	void openArchipelagoTravelDialog();
 
 	/**
+	 * Archipelago game switching (Ctrl+F7): pick another game whose options include it, save this
+	 * one to its last save slot and start the other from where it was left.
+	 */
+	void openArchipelagoSwitchDialog();
+
+	/**
 	 * Display a warning to the user that the game is not fully supported.
 	 *
 	 * @param msg  A message that will be presented to user. If empty, then
