@@ -35,6 +35,7 @@
 #include "common/list.h"
 #include "common/memstream.h"
 #include "common/savefile.h"
+#include "common/algorithm.h"
 #include "common/scummsys.h"
 #include "common/taskbar.h"
 #include "common/textconsole.h"
@@ -840,6 +841,69 @@ void Engine::openArchipelagoTravelDialog() {
 	int result = runDialog(*dialog);
 	delete dialog;
 	bridge->travelChosen(result);
+}
+
+void Engine::openArchipelagoSwitchDialog() {
+	const Common::String current = ConfMan.getActiveDomainName();
+	Common::StringArray targets;
+	Common::U32StringArray entries;
+	const Common::ConfigManager::DomainMap &domains = ConfMan.getGameDomains();
+	for (Common::ConfigManager::DomainMap::const_iterator it = domains.begin(); it != domains.end(); ++it) {
+		if (it->_key == current || !it->_value.contains("ap_switch") || it->_value.getVal("ap_switch") != "true")
+			continue;
+		targets.push_back(it->_key);
+	}
+	Common::sort(targets.begin(), targets.end());
+	for (uint i = 0; i < targets.size(); i++) {
+		const Common::ConfigManager::Domain *d = ConfMan.getDomain(targets[i]);
+		Common::String desc = d->contains("description") ? d->getVal("description") : targets[i];
+		entries.push_back(Common::U32String(desc, Common::kUtf8));
+	}
+	if (targets.empty()) {
+		g_system->displayMessageOnOSD(_("No other games are set up for switching (game options, Archipelago tab)"));
+		return;
+	}
+	// The engine's last save slot: the autosave slot is the engine's own (SCUMM even moves other
+	// saves out of it), and players rarely reach the last one
+	const int slot = getMetaEngine()->getMaximumSaveSlot();
+	if (!hasFeature(kSupportsSavingDuringRuntime) || slot <= 0 || slot == getAutosaveSlot()) {
+		g_system->displayMessageOnOSD(_("This game can't be saved for switching"));
+		return;
+	}
+	if (!canSaveGameStateCurrently()) {
+		g_system->displayMessageOnOSD(_("You can't switch games right now"));
+		return;
+	}
+
+	GUI::Dialog *dialog = APBridge::createChoiceDialog("Switch Game", entries, "Switch");
+	int result = runDialog(*dialog);
+	delete dialog;
+	if (result <= 0 || result > (int)targets.size())
+		return;
+	const Common::String &target = targets[result - 1];
+
+	// The game may have moved on while the list was open
+	if (!canSaveGameStateCurrently()) {
+		g_system->displayMessageOnOSD(_("You can't switch games right now"));
+		return;
+	}
+	Common::Error err = saveGameState(slot, "Archipelago game switch", true);
+	if (err.getCode() != Common::kNoError) {
+		GUI::MessageDialog errorDialog(_("Saving for the game switch failed: ") + err.getTranslatedDesc());
+		runDialog(errorDialog);
+		return;
+	}
+	ConfMan.setInt("ap_switch_slot", slot, current);
+	ConfMan.flushToDisk();
+
+	// Start the other game where its own last switch left it, or new
+	const Common::ConfigManager::Domain *d = ConfMan.getDomain(target);
+	int targetSlot = d && d->contains("ap_switch_slot") ? atoi(d->getVal("ap_switch_slot").c_str()) : -1;
+	ChainedGamesMan.clear();
+	ChainedGamesMan.push(target, targetSlot);
+	Common::Event event;
+	event.type = Common::EVENT_RETURN_TO_LAUNCHER;
+	g_system->getEventManager()->pushEvent(event);
 }
 
 void Engine::openMainMenuDialog() {

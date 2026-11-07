@@ -34,7 +34,8 @@ namespace APBridge {
 /**
  * The "Archipelago" tab of a game's options: turns the bridge on for that
  * game and sets the address of the Archipelago client it connects to.
- * Stored as ap_bridge_enabled / ap_bridge_address in the game's domain.
+ * Stored as ap_bridge_enabled / ap_bridge_address in the game's domain, and
+ * ap_switch: whether the game is offered by the game switch (Ctrl+F7).
  */
 class OptionsWidget : public GUI::OptionsContainerWidget {
 public:
@@ -55,6 +56,7 @@ private:
 	GUI::StaticTextWidget *_addressLabel;
 	GUI::EditTextWidget *_addressField;
 	GUI::StaticTextWidget *_hint;
+	GUI::CheckboxWidget *_switchCheckbox;
 };
 
 } // End of namespace APBridge

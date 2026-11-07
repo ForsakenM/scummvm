@@ -44,6 +44,7 @@
 
 #include "common/array.h"
 #include "common/str.h"
+#include "common/str-array.h"
 #include "common/hashmap.h"
 #include "common/hash-str.h"
 
@@ -56,6 +57,13 @@ class Dialog;
 }
 
 namespace APBridge {
+
+/**
+ * A list to pick one entry from, with an action button and Cancel (the travel menu's look).
+ * runDialog() returns the picked entry's index + 1, or 0.
+ */
+GUI::Dialog *createChoiceDialog(const Common::String &title, const Common::U32StringArray &entries,
+                                const char *actionLabel);
 
 typedef Common::Array<Common::String> Keys;
 typedef Common::Array<int32> Args;

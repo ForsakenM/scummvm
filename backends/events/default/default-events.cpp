@@ -40,6 +40,7 @@
 static const Common::CustomEventType kArchipelagoHelpAction = 0x41504850;
 // Custom backend action of the "Archipelago travel" key ('APTR').
 static const Common::CustomEventType kArchipelagoTravelAction = 0x41505452;
+static const Common::CustomEventType kArchipelagoSwitchAction = 0x41505357;
 
 DefaultEventManager::DefaultEventManager(Common::EventSource *boss) :
 	_buttonState(0),
@@ -185,6 +186,8 @@ bool DefaultEventManager::pollEvent(Common::Event &event) {
 			g_engine->openArchipelagoHelpDialog();
 		else if (event.customType == kArchipelagoTravelAction && g_engine && !g_engine->isPaused())
 			g_engine->openArchipelagoTravelDialog();
+		else if (event.customType == kArchipelagoSwitchAction && g_engine && !g_engine->isPaused())
+			g_engine->openArchipelagoSwitchDialog();
 		break;
 
 	case Common::EVENT_VIRTUAL_KEYBOARD:
@@ -392,6 +395,12 @@ Common::Keymap *DefaultEventManager::getGlobalKeymap() {
 	act = new Action("APTRAVEL", _("Archipelago travel"));
 	act->addDefaultInputMapping("C+F8");
 	act->setCustomBackendActionEvent(kArchipelagoTravelAction);
+	globalKeymap->addAction(act);
+
+	// Switches to another game set up for Archipelago game switching.
+	act = new Action("APSWITCH", _("Archipelago game switch"));
+	act->addDefaultInputMapping("C+F7");
+	act->setCustomBackendActionEvent(kArchipelagoSwitchAction);
 	globalKeymap->addAction(act);
 
 	act = new Action("MUTE", _("Toggle mute"));

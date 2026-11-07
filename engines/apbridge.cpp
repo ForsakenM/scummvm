@@ -61,7 +61,14 @@ Common::String Bridge::configuredEndpoint() {
 	if (ConfMan.hasKey("ap_bridge") && !ConfMan.get("ap_bridge").empty())
 		return ConfMan.get("ap_bridge");
 	const char *env = getenv("SCUMMVM_AP_BRIDGE");
-	return env ? Common::String(env) : Common::String();
+	if (!env)
+		return Common::String();
+	// A client that starts ScummVM names the game it is for; after a game switch (Ctrl+F7) the
+	// other game must not connect to that client
+	const char *envTarget = getenv("SCUMMVM_AP_TARGET");
+	if (envTarget && *envTarget && ConfMan.getActiveDomainName() != envTarget)
+		return Common::String();
+	return Common::String(env);
 }
 
 Bridge *Bridge::instance() {
@@ -507,7 +514,8 @@ public:
 		kCancelCmd = 'APCN'
 	};
 
-	TravelDialog(const Common::String &title, const Common::Array<bool> &enabled, const Common::U32StringArray &entries)
+	TravelDialog(const Common::String &title, const Common::Array<bool> &enabled, const Common::U32StringArray &entries,
+	             const char *actionLabel = "Travel")
 		: GUI::Dialog(0, 0, 10, 10, true), _enabled(enabled) {
 		const int guiW = g_gui.getGUIWidth(), guiH = g_gui.getGUIHeight();
 		const bool lowres = guiW <= 320;
@@ -538,7 +546,7 @@ public:
 
 		const int by = h - pad - buttonH;
 		_travel = new GUI::ButtonWidget(this, w - 2 * (pad + buttonW), by, buttonW, buttonH, true,
-		                                Common::U32String("Travel"), Common::U32String(), kTravelCmd, Common::ASCII_RETURN);
+		                                Common::U32String(actionLabel), Common::U32String(), kTravelCmd, Common::ASCII_RETURN);
 		new GUI::ButtonWidget(this, w - pad - buttonW, by, buttonW, buttonH, true,
 		                      Common::U32String("Cancel"), Common::U32String(), kCancelCmd, Common::ASCII_ESCAPE);
 		updateButton();
@@ -586,6 +594,12 @@ private:
 
 GUI::Dialog *Bridge::createHelpDialog(bool withGameHelp) {
 	return new HelpDialog(_helpText, withGameHelp);
+}
+
+GUI::Dialog *createChoiceDialog(const Common::String &title, const Common::U32StringArray &entries,
+                                const char *actionLabel) {
+	Common::Array<bool> enabled(entries.size(), true);
+	return new TravelDialog(title, enabled, entries, actionLabel);
 }
 
 GUI::Dialog *Bridge::createTravelDialog(Common::String &reason) {
