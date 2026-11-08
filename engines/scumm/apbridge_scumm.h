@@ -64,6 +64,8 @@ class Actor;
  *   room
  *   goto [room, obj, x, y]   move ego to a room as loadRoomWithEgo does (obj 0: put at x, y)
  *   stopScript [n...]    stops those scripts, as a script's stopScript does
+ *   stopSound [id...]    stops those sounds
+ *   soundRunning [id]    1 while that sound plays or is queued
  *   stopSounds            stops all music and sound effects
  *   talk                  [text] [actor]: the actor (default ego) says text over their head
  *   actorColor [actor, color, r, g, b, costume]   in the actor's costumes (0 = ego; costume
