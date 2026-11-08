@@ -99,6 +99,39 @@ void ScummBridgeAdapter::tick() {
 	}
 }
 
+int ScummBridgeAdapter::matchColor(int r, int g, int b) const {
+	// The palette's closest color, as remapPaletteColor finds it, but never one the room cycles
+	// (signs, water, lights): a costume drawn in one would flicker along with it
+	if (_vm->_game.version < 5 || _vm->_game.heversion)
+		return _vm->remapPaletteColor(r, g, b, -1);
+	bool cycled[256] = {};
+	for (int i = 0; i < 16; i++) {
+		const ColorCycle &c = _vm->_colorCycle[i];
+		if (c.delay && c.start <= c.end)
+			for (int j = c.start; j <= c.end; j++)
+				cycled[j] = true;
+	}
+	r = CLIP(r, 0, 255) & ~3;
+	g = CLIP(g, 0, 255) & ~3;
+	b = CLIP(b, 0, 255) & ~3;
+	uint best = 0xFFFFFFFF;
+	int bestItem = 1;
+	for (int i = 1; i < 255; i++) {
+		if (cycled[i])
+			continue;
+		const byte *pal = _vm->_currentPalette + i * 3;
+		int dr = (pal[0] & ~3) - r, dg = (pal[1] & ~3) - g, db = (pal[2] & ~3) - b;
+		uint sum = 3 * dr * dr + 6 * dg * dg + 2 * db * db;
+		if (sum < best) {
+			best = sum;
+			bestItem = i;
+			if (!sum)
+				break;
+		}
+	}
+	return bestItem;
+}
+
 void ScummBridgeAdapter::applyLight(int color, int &r, int &g, int &b) const {
 	// Scale a replacement color the way the scene has scaled the color it replaces: the
 	// current palette against the room's own palette
@@ -283,7 +316,7 @@ int ScummBridgeAdapter::recolor(int actor, int color) {
 		return color;
 	int r = c->r, g = c->g, b = c->b;
 	applyLight(color, r, g, b);
-	return _vm->remapPaletteColor(r, g, b, -1);
+	return matchColor(r, g, b);
 }
 
 int ScummBridgeAdapter::recolorAlt(int actor, int color) {
@@ -292,7 +325,7 @@ int ScummBridgeAdapter::recolorAlt(int actor, int color) {
 		return -1;
 	int r = c->r2, g = c->g2, b = c->b2;
 	applyLight(color, r, g, b);
-	return _vm->remapPaletteColor(r, g, b, -1);
+	return matchColor(r, g, b);
 }
 
 int ScummBridgeAdapter::rainbow(int actor, int color, int band) {
@@ -304,7 +337,7 @@ int ScummBridgeAdapter::rainbow(int actor, int color, int band) {
 	const byte *h = hues[CLIP(band, 0, 5)];
 	int r = h[0] * bright / 255, g = h[1] * bright / 255, b = h[2] * bright / 255;
 	applyLight(color, r, g, b);
-	return _vm->remapPaletteColor(r, g, b, -1);
+	return matchColor(r, g, b);
 }
 
 bool ScummBridgeAdapter::pattern(int actor, byte &kind, byte &size) {
@@ -513,6 +546,14 @@ bool ScummBridgeAdapter::performAction(const Common::String &op, const APBridge:
 		return true;
 	}
 
+	if (op == "stopScript") {
+		// Stop running scripts, as a script's stopScript does (global or local numbers)
+		for (uint i = 0; i < args.size(); i++)
+			if (args[i] > 0)
+				_vm->stopScript(args[i]);
+		result = 1;
+		return true;
+	}
 	if (op == "runScript") {
 		int scriptArgs[NUM_SCRIPT_LOCAL];
 		memset(scriptArgs, 0, sizeof(scriptArgs));
