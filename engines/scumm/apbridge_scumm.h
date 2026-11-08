@@ -68,6 +68,7 @@ class Actor;
  *   actorColor [actor, color, r, g, b, costume]   in the actor's costumes (0 = ego; costume
  *                         0 or left out = every costume), the parts drawn in palette color
  *                         `color` use the room palette's closest match to r, g, b instead.
+ *                         Scene lighting (RoomIntensity and the like) scales r, g, b as it scales `color`.
  *                         r = -1 removes it.
  *                         Three more values [r2, g2, b2] give a pattern's second color.
  *   actorPattern [actor, kind, size]   draws actorColor's second colors in a pattern over the
@@ -126,6 +127,9 @@ private:
 	Common::Array<ColorOverride> _colors;
 	void redrawActors();
 	const ColorOverride *findColor(int actor, int color);
+	/** Darken or tint r, g, b as the scene has the palette color @p color. */
+	void applyLight(int color, int &r, int &g, int &b) const;
+	uint32 _lightSig = 0;   ///< the recolored colors' current palette values, to notice scene lighting
 	struct Pattern {
 		int actor;
 		byte kind, size;
