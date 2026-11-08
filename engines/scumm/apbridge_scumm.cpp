@@ -85,6 +85,41 @@ void ScummBridgeAdapter::tick() {
 		if (n > 0 && n < _vm->_numActors && _vm->_actors[n]->isInCurrentRoom())
 			_vm->_actors[n]->_needRedraw = true;
 	}
+	// The game darkens or tints the palette for scenes (RoomIntensity and the like); recolored
+	// costumes follow their original colors, so redraw them when those colors change
+	uint32 sig = 0;
+	for (uint i = 0; i < _colors.size(); i++) {
+		int idx = CLIP(_colors[i].index, 0, 255);
+		sig = sig * 31 + _vm->_currentPalette[idx * 3] * 65536 + _vm->_currentPalette[idx * 3 + 1] * 256 +
+		      _vm->_currentPalette[idx * 3 + 2];
+	}
+	if (sig != _lightSig) {
+		_lightSig = sig;
+		redrawActors();
+	}
+}
+
+void ScummBridgeAdapter::applyLight(int color, int &r, int &g, int &b) const {
+	// Scale a replacement color the way the scene has scaled the color it replaces: the
+	// current palette against the room's own palette
+	if (color < 0 || color > 255 || _vm->_game.version < 5 || _vm->_game.heversion || !_vm->_roomResource)
+		return;
+	const byte *base = _vm->getPalettePtr(_vm->_curPalIndex, _vm->_roomResource);
+	if (!base)
+		return;
+	base += color * 3;
+	const byte *cur = _vm->_currentPalette + color * 3;
+	int baseSum = base[0] + base[1] + base[2], curSum = cur[0] + cur[1] + cur[2];
+	if (baseSum == curSum && base[0] == cur[0] && base[1] == cur[1])
+		return;
+	int *c[3] = { &r, &g, &b };
+	for (int i = 0; i < 3; i++) {
+		if (base[i] >= 16)
+			*c[i] = *c[i] * cur[i] / base[i];
+		else if (baseSum)
+			*c[i] = *c[i] * curSum / baseSum;
+		*c[i] = CLIP(*c[i], 0, 255);
+	}
 }
 
 bool ScummBridgeAdapter::onPutOwner(int obj, int owner) {
@@ -244,12 +279,20 @@ const ScummBridgeAdapter::ColorOverride *ScummBridgeAdapter::findColor(int actor
 int ScummBridgeAdapter::recolor(int actor, int color) {
 	// The room palette's closest color, matched as the game matches remapped actor colors
 	const ColorOverride *c = findColor(actor, color);
-	return c ? _vm->remapPaletteColor(c->r, c->g, c->b, -1) : color;
+	if (!c)
+		return color;
+	int r = c->r, g = c->g, b = c->b;
+	applyLight(color, r, g, b);
+	return _vm->remapPaletteColor(r, g, b, -1);
 }
 
 int ScummBridgeAdapter::recolorAlt(int actor, int color) {
 	const ColorOverride *c = findColor(actor, color);
-	return (c && c->r2 >= 0) ? _vm->remapPaletteColor(c->r2, c->g2, c->b2, -1) : -1;
+	if (!c || c->r2 < 0)
+		return -1;
+	int r = c->r2, g = c->g2, b = c->b2;
+	applyLight(color, r, g, b);
+	return _vm->remapPaletteColor(r, g, b, -1);
 }
 
 int ScummBridgeAdapter::rainbow(int actor, int color, int band) {
@@ -259,7 +302,9 @@ int ScummBridgeAdapter::rainbow(int actor, int color, int band) {
 	const ColorOverride *c = findColor(actor, color);
 	int bright = (c && c->r2 >= 0) ? c->r2 : 255;
 	const byte *h = hues[CLIP(band, 0, 5)];
-	return _vm->remapPaletteColor(h[0] * bright / 255, h[1] * bright / 255, h[2] * bright / 255, -1);
+	int r = h[0] * bright / 255, g = h[1] * bright / 255, b = h[2] * bright / 255;
+	applyLight(color, r, g, b);
+	return _vm->remapPaletteColor(r, g, b, -1);
 }
 
 bool ScummBridgeAdapter::pattern(int actor, byte &kind, byte &size) {
