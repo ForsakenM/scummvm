@@ -151,7 +151,10 @@ Events:
 | `getclass` | `[object, class, by, number]` | `[has]` (vetoable; v5). A script tested whether an object has a class (bit 7 stripped); `by` and `number` as for `getowner`. |
 
 Context: `room`, `ego`, `mx`/`my` (the mouse in room coordinates, so a client can
-tell where a click landed).
+tell where a click landed), `screen` (the part of the screen the mouse is over: 0 the
+room, 2 the verbs and inventory; an object picked up keeps its number in the inventory,
+so this tells a click on the room's object from one on its inventory copy), `under` (the
+room object under the mouse, 0 for none or when the mouse is off the room).
 
 A `getowner` or `getclass` veto replaces the answer the script gets with the rule's `value`.
 
