@@ -183,7 +183,7 @@ Actions: `getVar`, `setVar`, `getBit`, `setBit`, `getOwner`,
 `setOwner [obj, owner|-1]` (clears the inventory entry first when moving an
 object away from ego), `give [obj, homeRoom]` (copies the object out of its
 home room into the inventory unless it is already there), `take [obj]`,
-`runScript [n, args...]`, `startObject [obj, verb, args...]` (runs one of an
+`runScript [n, args...]`, `stopScript [n...]` (stops those scripts, as a script's `stopScript` does), `startObject [obj, verb, args...]` (runs one of an
 object's verb scripts), `goto [room, obj, x, y]` (moves ego to another room as `loadRoomWithEgo` does:
 placed at object `obj`'s walk-to spot and walking to `x, y`; with `obj` 0 the room
 loads as `loadRoom` does and ego is put at `x, y`), `room`, `stopSounds` (all music and effects), `talk [text] [actor]` (the actor, default ego, says the text over their head in the game's font, talk color and animation; 0 means busy: someone is talking, a cutscene runs or the player has no control), `actorColor [actor, color, r, g, b, costume]` (in the actor's costumes, 0 = ego, or only in `costume` when given, the parts drawn in palette color `color` use the room palette's closest match to r, g, b, darkened or tinted as the scene has darkened the color it replaces, so a recolored coat follows the game's lighting effects; r = -1 removes it), `clearColors`, `spots [object...]` (replace the list of spots, see above), `setClass [object, class...]` (as a script's `setClass`: a class with bit 0x80 is set, without it cleared; actors below the actor count), `invSlots` (inventory

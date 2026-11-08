@@ -63,6 +63,7 @@ class Actor;
  *   startObject [obj, verb, args...]   runs one of an object's verb scripts
  *   room
  *   goto [room, obj, x, y]   move ego to a room as loadRoomWithEgo does (obj 0: put at x, y)
+ *   stopScript [n...]    stops those scripts, as a script's stopScript does
  *   stopSounds            stops all music and sound effects
  *   talk                  [text] [actor]: the actor (default ego) says text over their head
  *   actorColor [actor, color, r, g, b, costume]   in the actor's costumes (0 = ego; costume
@@ -129,6 +130,8 @@ private:
 	const ColorOverride *findColor(int actor, int color);
 	/** Darken or tint r, g, b as the scene has the palette color @p color. */
 	void applyLight(int color, int &r, int &g, int &b) const;
+	/** The current palette's closest color to r, g, b outside the room's color cycles. */
+	int matchColor(int r, int g, int b) const;
 	uint32 _lightSig = 0;   ///< the recolored colors' current palette values, to notice scene lighting
 	struct Pattern {
 		int actor;
