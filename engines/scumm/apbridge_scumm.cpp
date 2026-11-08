@@ -370,6 +370,19 @@ bool ScummBridgeAdapter::performAction(const Common::String &op, const APBridge:
 		result = _spots.size();
 		return true;
 	}
+	if (op == "soundRunning") {
+		// Whether a sound (music or effect) is playing or queued
+		result = args.size() && args[0] > 0 && _vm->_sound->isSoundRunning(args[0]) ? 1 : 0;
+		return true;
+	}
+	if (op == "stopSound") {
+		// Stop particular sounds, as a script's stopSound does
+		for (uint i = 0; i < args.size(); i++)
+			if (args[i] > 0)
+				_vm->_sound->stopSound(args[i]);
+		result = 1;
+		return true;
+	}
 	if (op == "stopSounds") {
 		// Silence music and effects, as a room change made by the game's own scripts would
 		_vm->_sound->stopAllSounds();
