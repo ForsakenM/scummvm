@@ -71,6 +71,15 @@ void ScummBridgeAdapter::getContext(Common::HashMap<Common::String, int32> &ctx)
 		ctx["mx"] = _vm->VAR(_vm->VAR_VIRT_MOUSE_X);
 		ctx["my"] = _vm->VAR(_vm->VAR_VIRT_MOUSE_Y);
 	}
+	// Which part of the screen the mouse is over: 0 the room, 2 the verbs and inventory (the
+	// virtual screen numbers), so a client can tell a room object from its inventory copy
+	if (VirtScreen *vs = _vm->findVirtScreen(_vm->_mouse.y)) {
+		ctx["screen"] = vs->number;
+		// The room object under the mouse (0 for none, or off the room): the object a click in
+		// the room is about, even when ego also holds an object of that number
+		ctx["under"] = (vs->number == kMainVirtScreen && _vm->VAR_VIRT_MOUSE_X != 0xFF)
+			? _vm->findObject(_vm->VAR(_vm->VAR_VIRT_MOUSE_X), _vm->VAR(_vm->VAR_VIRT_MOUSE_Y)) : 0;
+	}
 }
 
 void ScummBridgeAdapter::tick() {
