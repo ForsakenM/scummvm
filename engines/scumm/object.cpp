@@ -369,7 +369,13 @@ bool ScummEngine::isApSpot(int obj) const {
 	// item is used up (owner neither ego nor a room), see ScummBridgeAdapter::isSpot
 	if (!_apBridge || obj < 1 || obj >= _numGlobalObjects || !_apBridge->isSpot(obj))
 		return false;
-	return VAR_EGO == 0xFF || _objectOwnerTable[obj] != _scummVars[VAR_EGO];
+	// No ego yet (boot, or restart() clearing the variables before it empties
+	// the inventory): nothing is used up, held items are just held
+	if (VAR_EGO == 0xFF)
+		return true;
+	if (_scummVars[VAR_EGO] == 0)
+		return false;
+	return _objectOwnerTable[obj] != _scummVars[VAR_EGO];
 }
 
 int ScummEngine::whereIsObject(int object) const {
