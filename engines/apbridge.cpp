@@ -222,8 +222,25 @@ void Bridge::tick() {
 
 void Bridge::rebuildKindIndex() {
 	_watchedKinds.clear();
-	for (uint i = 0; i < _rules.size(); i++)
-		_watchedKinds[_rules[i].kind] = true;
+	_watchedFirstKeys.clear();
+	for (uint i = 0; i < _rules.size(); i++) {
+		const Rule &rule = _rules[i];
+		_watchedKinds[rule.kind] = true;
+		Common::String first = rule.keys.empty() ? Common::String("*") : rule.keys[0];
+		first.toLowercase();
+		_watchedFirstKeys[rule.kind + "\n" + first] = true;
+	}
+}
+
+bool Bridge::wantsFirstKey(const char *kind, const Common::String &key) const {
+	if (_connected && _tracedKinds.contains(kind))
+		return true;
+	Common::String k = Common::String(kind) + "\n";
+	if (_watchedFirstKeys.contains(k + "*"))
+		return true;
+	Common::String lower = key;
+	lower.toLowercase();
+	return _watchedFirstKeys.contains(k + lower);
 }
 
 bool Bridge::matches(const Rule &rule, const char *kind, const Keys &keys, const Args &args,

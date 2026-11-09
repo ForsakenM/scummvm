@@ -128,6 +128,12 @@ public:
 		return _watchedKinds.contains(kind) || (_connected && _tracedKinds.contains(kind));
 	}
 
+	/**
+	 * For events reported very often: whether a rule (or a trace) may want this
+	 * event, by its first key. Only meaningful once wants(kind) is true.
+	 */
+	bool wantsFirstKey(const char *kind, const Common::String &key) const;
+
 	/** Report an event. May only veto when no client action is executing. */
 	Verdict notify(const char *kind, const Keys &keys, const Args &args);
 
@@ -203,6 +209,7 @@ private:
 	Common::Array<Rule> _rules;
 	Common::HashMap<Common::String, bool> _watchedKinds;
 	Common::HashMap<Common::String, bool> _tracedKinds;
+	Common::HashMap<Common::String, bool> _watchedFirstKeys; ///< "kind\nfirst key" (lower case) of every rule
 	Common::Array<Common::String> _outQueue; ///< events raised before connect
 	Common::String _helpText;
 	Common::String _travelTitle;

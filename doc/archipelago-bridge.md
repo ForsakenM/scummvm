@@ -113,11 +113,27 @@ Events:
 
 | kind      | keys | args |
 |-----------|------|------|
-| `call`    | `[script, export]` | procedure arguments |
-| `send`    | `[object, selector, class]` | method arguments (vetoable) |
-| `setprop` | `[object, selector, class]` | `[new value]` (vetoable: the write is skipped) |
-| `getprop` | `[object, selector, class]` | none (vetoable: `value` replaces what the script reads) |
+| `call`    | `[script, export, by, method]` | procedure arguments (vetoable: the procedure is skipped and returns `value`) |
+| `send`    | `[object, selector, class, by, method]` | method arguments (vetoable) |
+| `setprop` | `[object, selector, class, by, method]` | `[new value]` (vetoable: the write is skipped) |
+| `getprop` | `[object, selector, class, by, method]` | none (vetoable: `value` replaces what the script reads) |
+| `getglobal` | `[index, by, method]` | `[value]` (vetoable: `value` replaces what the script reads) |
 | `kernel`  | `[name]` | kernel call arguments |
+
+`by` and `method` name the method whose code caused the event (its object and
+selector; empty when unknown, e.g. for a procedure run outside any method). As
+keys only need to match as a prefix, rules may leave them out; with them, a
+rule answers one script's question only, e.g. "does ego have the hair?" as
+asked by the ribbon's `doVerb`:
+
+```json
+{"cmd":"watch","rule":7,"kind":"send","keys":["ego","has","*","ribbon","doVerb"],"args":["4"],"veto":true,"value":0}
+```
+
+`getglobal` reports script reads of global variables (`lag`/`lsg` and their
+indexed forms), but only for globals some rule names by index (a trace of
+`getglobal` reports them all), so a story stage can be answered for one script
+while the real value stays.
 
 `getprop` only sees reads made by message (`(obj prop:)`). An object's own
 methods read their properties with direct VM opcodes, which are not reported.

@@ -1277,6 +1277,9 @@ void run_vm(EngineState *s) {
 			var_type = opcode & 0x3; // Gets the variable type: g, l, t or p
 			var_number = opparams[0] + (opcode >= op_lagi ? s->r_acc.requireSint16() : 0);
 			s->r_acc = read_var(s, var_type, var_number);
+			// Archipelago bridge: the client may answer a script's global read
+			if (var_type == VAR_GLOBAL)
+				apBridgeGetGlobal(s, var_number, s->r_acc);
 			break;
 
 		case op_lsg: // 0x44 (68)
@@ -1292,7 +1295,10 @@ void run_vm(EngineState *s) {
 			// an additional index
 			var_type = opcode & 0x3; // Gets the variable type: g, l, t or p
 			var_number = opparams[0] + (opcode >= op_lsgi ? s->r_acc.requireSint16() : 0);
-			PUSH32(read_var(s, var_type, var_number));
+			r_temp = read_var(s, var_type, var_number);
+			if (var_type == VAR_GLOBAL)
+				apBridgeGetGlobal(s, var_number, r_temp);
+			PUSH32(r_temp);
 			break;
 
 		case op_sag: // 0x50 (80)

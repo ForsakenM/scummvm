@@ -86,6 +86,8 @@ private:
 bool apBridgeCall(EngineState *s, uint16 script, uint16 pubfunct, uint16 argc, const reg_t *argp, reg_t &acc);
 bool apBridgeSend(EngineState *s, reg_t obj, int selector, bool isMethod, uint16 argc, const reg_t *argp, reg_t &acc);
 void apBridgeKernel(EngineState *s, const char *name, int argc, const reg_t *argv);
+/** A script read global @p index (holding @p value). Returns true when the client answers, with @p value replaced. */
+bool apBridgeGetGlobal(EngineState *s, int index, reg_t &value);
 
 } // End of namespace Sci
 

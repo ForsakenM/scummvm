@@ -58,6 +58,28 @@ static Common::String className(EngineState *s, reg_t obj) {
 	return n ? Common::String(n) : Common::String();
 }
 
+// The method running the code that caused an event: its object and selector
+// ("" for each when unknown, e.g. a procedure called outside any method). Rules
+// add them as extra keys to answer one script's question and nobody else's.
+static void pushCaller(EngineState *s, APBridge::Keys &keys) {
+	const ExecStack *xs = nullptr;
+	// s->xs is only maintained while the VM runs; make sure it is a live frame
+	for (Common::List<ExecStack>::const_iterator it = s->_executionStack.begin(); it != s->_executionStack.end(); ++it) {
+		if (&*it == s->xs) {
+			xs = s->xs;
+			break;
+		}
+	}
+	if (xs && !xs->objp.isNull() && s->_segMan->getObject(xs->objp))
+		keys.push_back(objName(s, xs->objp));
+	else
+		keys.push_back("");
+	if (xs && xs->debugSelector >= 0)
+		keys.push_back(g_sci->getKernel()->getSelectorName(xs->debugSelector));
+	else
+		keys.push_back("");
+}
+
 static void pushArgs(APBridge::Args &out, uint16 argc, const reg_t *argp) {
 	// argp[0] is argc itself
 	for (uint16 i = 1; i <= argc; i++)
@@ -71,6 +93,7 @@ bool apBridgeCall(EngineState *s, uint16 script, uint16 pubfunct, uint16 argc, c
 	APBridge::Keys keys;
 	keys.push_back(Common::String::format("%d", script));
 	keys.push_back(Common::String::format("%d", pubfunct));
+	pushCaller(s, keys);
 	APBridge::Args args;
 	pushArgs(args, argc, argp);
 	APBridge::Verdict v = b->notify("call", keys, args);
@@ -92,11 +115,31 @@ bool apBridgeSend(EngineState *s, reg_t obj, int selector, bool isMethod, uint16
 	keys.push_back(objName(s, obj));
 	keys.push_back(g_sci->getKernel()->getSelectorName(selector));
 	keys.push_back(className(s, obj));
+	pushCaller(s, keys);
 	APBridge::Args args;
 	pushArgs(args, argc, argp);
 	APBridge::Verdict v = b->notify(kind, keys, args);
 	if (v.veto)
 		acc = make_reg(0, (uint16)v.value);
+	return v.veto;
+}
+
+bool apBridgeGetGlobal(EngineState *s, int index, reg_t &value) {
+	APBridge::Bridge *b = activeBridge();
+	if (!b || !b->wants("getglobal"))
+		return false;
+	// Scripts read globals all the time: build the event only for watched ones
+	Common::String key = Common::String::format("%d", index);
+	if (!b->wantsFirstKey("getglobal", key))
+		return false;
+	APBridge::Keys keys;
+	keys.push_back(key);
+	pushCaller(s, keys);
+	APBridge::Args args;
+	args.push_back((int32)(int16)value.getOffset());
+	APBridge::Verdict v = b->notify("getglobal", keys, args);
+	if (v.veto)
+		value = make_reg(0, (uint16)v.value);
 	return v.veto;
 }
 
