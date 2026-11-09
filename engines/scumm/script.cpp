@@ -657,7 +657,10 @@ int ScummEngine::readVar(uint var) {
 			}
 
 			assertRange(0, var, _numBitVariables - 1, "variable (reading)");
-			return (_bitVars[var >> 3] & (1 << (var & 7))) ? 1 : 0;
+			int bitValue = (_bitVars[var >> 3] & (1 << (var & 7))) ? 1 : 0;
+			if (_apBridge)
+				_apBridge->onGetBit(var, bitValue);
+			return bitValue;
 		}
 	}
 

@@ -43,6 +43,9 @@ class Actor;
  *   script  keys [number]  args []                                 (vetoable)
  *   getowner keys [object, by, number]  args [owner]               (vetoable)
  *   getclass keys [object, class, by, number]  args [has]     (vetoable)
+ *   getbit  keys [index, by, number]  args [value]            (vetoable)
+ *           a script read a bit variable (v5 and later; reads outside scripts
+ *           are not reported).
  *           a script asked who owns an object (getObjectOwner). "by" names the
  *           asking script: object (number = object id), global, local, entry
  *           or exit (number = room). A veto replaces the answer with the
@@ -99,6 +102,8 @@ public:
 	bool onGetOwner(int obj, int &owner);
 	/** A script tests whether @p obj has class @p cls (bit 7 stripped); @p has may be answered. */
 	bool onGetClass(int obj, int cls, int &has);
+	/** A script reads bit variable @p bit; @p value may be answered. */
+	bool onGetBit(int bit, int &value);
 	/**
 	 * Spots: objects the client lists as still to be found at their home spot.
 	 * Using such an object up (its owner leaving ego for anything but a room)

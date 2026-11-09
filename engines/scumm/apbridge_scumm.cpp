@@ -241,6 +241,25 @@ bool ScummBridgeAdapter::onGetClass(int obj, int cls, int &has) {
 	return v.veto;
 }
 
+bool ScummBridgeAdapter::onGetBit(int bit, int &value) {
+	APBridge::Bridge *b = bridge();
+	if (!b || _vm->_currentScript == 0xFF || !b->wants("getbit"))
+		return false;
+	const char *by;
+	int number;
+	scriptContext(by, number);
+	APBridge::Keys keys;
+	keys.push_back(num(bit));
+	keys.push_back(by);
+	keys.push_back(num(number));
+	APBridge::Args args;
+	args.push_back(value);
+	APBridge::Verdict v = b->notify("getbit", keys, args);
+	if (v.veto)
+		value = v.value ? 1 : 0;
+	return v.veto;
+}
+
 void ScummBridgeAdapter::pickupEnd(int obj, int slot) {
 	if (_vetoedOwnerObj != obj || slot < 0 || slot >= _vm->_numInventory || _vm->_inventory[slot] != obj)
 		return;
