@@ -1793,6 +1793,18 @@ void ScummEngine::setupScumm(const Common::Path &macResourceFile) {
 		_bootParam = -7873;
 	}
 
+	// Archipelago: a randomized Monkey Island 2 (DOS) starts where Part I does, on
+	// Scabb Island's shore before Largo's welcome, as the game's own boot param 1984
+	// does: no copy protection, no difficulty screen (the full game, which the
+	// randomizer's logic follows) and no opening. Boot params need the game's debug
+	// mode, which only turns on scripts testing VAR_DEBUGMODE > 1 elsewhere, so none
+	// in this game. ScummVM's copy_protection setting keeps the vanilla start.
+	if (!_copyProtection && _game.id == GID_MONKEY2 && _game.platform != Common::kPlatformMacintosh &&
+	    _bootParam == 0 && !APBridge::Bridge::configuredEndpoint().empty()) {
+		_bootParam = 1984;
+		_debugMode = true;
+	}
+
 	// Skip the sound pre-loading
 	if (_game.id == GID_SAMNMAX && _bootParam == 0 && enhancementEnabled(kEnhUIUX)) {
 		_bootParam = -1;
