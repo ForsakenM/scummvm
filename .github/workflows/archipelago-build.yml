@@ -17,7 +17,7 @@ permissions:
   contents: write
 
 env:
-  ENGINES: scumm,sci
+  ENGINES: scumm,he,sci
 
 jobs:
   windows:
