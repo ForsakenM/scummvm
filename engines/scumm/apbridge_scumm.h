@@ -97,6 +97,8 @@ public:
 	bool onWriteVar(unsigned int var, int value);
 	void onRoom(int room);
 	bool onRunScript(int script);
+	/** An object's verb code (what a click on a hotspot runs) is about to start. */
+	bool onRunObject(int object, int verb);
 	/** The palette color a costume of @p actor draws in place of @p color. */
 	int recolor(int actor, int color);
 	/** The pattern's second color for @p color, or -1. */
