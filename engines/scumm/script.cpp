@@ -120,6 +120,9 @@ void ScummEngine::runObjectScript(int object, int entry, bool freezeResistant, b
 	if (!object)
 		return;
 
+	if (_apBridge && _apBridge->onRunObject(object, entry))
+		return;
+
 	if (!recursive && (_game.version >= 3))
 		stopObjectScript(object);
 
