@@ -201,6 +201,16 @@ bool ScummBridgeAdapter::onRunScript(int script) {
 	return b->notify("script", keys, APBridge::Args()).veto;
 }
 
+bool ScummBridgeAdapter::onRunObject(int object, int verb) {
+	APBridge::Bridge *b = bridge();
+	if (!b || !b->wants("object"))
+		return false;
+	APBridge::Keys keys;
+	keys.push_back(num(object));
+	keys.push_back(num(verb));
+	return b->notify("object", keys, APBridge::Args()).veto;
+}
+
 const ScummBridgeAdapter::ColorOverride *ScummBridgeAdapter::findColor(int actor, int color) {
 	if (_colors.empty())
 		return nullptr;
